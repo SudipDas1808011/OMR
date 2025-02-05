@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dynamic OMR Sheet</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+        .container {
+            max-width: 600px;
+            margin: auto;
+        }
+        .question {
+            margin: 10px 0;
+        }
+        button {
+            margin-top: 10px;
+        }
+        .question label{
+            border-radius: 50px;
+            padding: 2px;
+        }
+        .question input[type="radio"] {
+            width: 20px;
+            height: 20px;
+            appearance: none;
+            border: 2px solid #000;
+            border-radius: 50%;
+            outline: none;
+            position: relative;
+        }
+        .question input[type="radio"]:checked {
+            background-color: #000305;
+        }
+        .question input[type="radio"]:checked::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 10px;
+            height: 10px;
+            background-color: #000000;
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+        }
+        .question label::before {
+            content: attr(data-label);
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 12px;
+            color: #080000;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Dynamic OMR Sheet</h1>
+        <label for="numQuestions">Enter number of questions:</label>
+        <input type="number" id="numQuestions" min="1" max="100">
+        <button id="generateBtn">Generate OMR Sheet</button>
+
+        <form id="omrForm" style="display: none;">
+            <div id="questionsContainer"></div>
+            <button type="submit" id="submitbtn">Submit</button>
+            <button type="button" id="checkAnswersBtn">Check Answers</button>
+        </form>
+
+        <div id="results" style="display: none;">
+            <h2>Your Answers:</h2>
+            <div id="answersContainer"></div>
+            <h3 id="score"></h3>
+        </div>
+    </div>
+    <script>
+        let selectedAnswers = [];
+        document.getElementById('generateBtn').addEventListener('click', function() {
+            document.getElementById("checkAnswersBtn").style.display = 'none';
+            const numQuestions = document.getElementById('numQuestions').value;
+            const questionsContainer = document.getElementById('questionsContainer');
+            questionsContainer.innerHTML = '';
+            selectedAnswers = [];
+
+            for (let i = 1; i <= numQuestions; i++) {
+                const questionHTML = `
+                    <div class="question">
+                        <p id="${i}">${i}. 
+                        <label data-label='a'><input type="radio" name="q${i}" value="A"></label> 
+                        <label data-label='b'><input type="radio" name="q${i}" value="B"></label> 
+                        <label data-label='c'><input type="radio" name="q${i}" value="C"></label> 
+                        <label data-label='d'><input type="radio" name="q${i}" value="D"></label></p>
+                    </div>
+                `;
+                questionsContainer.innerHTML += questionHTML;
+            }
+
+            document.getElementById('omrForm').style.display = 'block';
+            document.getElementById('results').style.display = 'none';
+        });
+
+        document.getElementById('omrForm').addEventListener('submit', function(event) {
+            event.preventDefault();
+            document.getElementById("submitbtn").style.display = 'none';
+            document.getElementById("checkAnswersBtn").style.display = 'block';
+            const answersContainer = document.getElementById('answersContainer');
+            answersContainer.innerHTML = '';
+            selectedAnswers = [];
+
+            const numQuestions = document.getElementById('numQuestions').value;
+
+            for (let i = 1; i <= numQuestions; i++) {
+                const answer = document.querySelector(`input[name="q${i}"]:checked`);
+                selectedAnswers.push(answer ? answer.value : null);
+            }
+
+            document.getElementById('results').style.display = 'block';
+        });
+
+        document.getElementById('checkAnswersBtn').addEventListener('click', function() {
+            const numQuestions = document.getElementById('numQuestions').value;
+            const scoreContainer = document.getElementById('score');
+            let score = 0;
+            scoreContainer.innerHTML = '';
+
+            for (let i = 1; i <= numQuestions; i++) {
+                const currentAnswer = document.querySelector(`input[name="q${i}"]:checked`);
+                const previousAnswer = selectedAnswers[i - 1];
+
+                if (currentAnswer) {
+                    const paragraph = document.getElementById(i.toString());
+                    if (previousAnswer === currentAnswer.value) {
+                        score++;
+                    } else if (previousAnswer !== null) {
+                        paragraph.querySelector(`input[value="${previousAnswer}"]`).parentElement.style.backgroundColor = 'red';
+                    }
+                    if (currentAnswer.value !== null) {
+                        paragraph.querySelector(`input[value="${currentAnswer.value}"]`).parentElement.style.backgroundColor = previousAnswer == null ? 'yellow' : 'green';
+                    }
+                }
+            }
+            uncheckAllRadioButtons();
+            scoreContainer.innerHTML = `Correct: ${score} out of ${numQuestions}`;
+        });
+
+        function uncheckAllRadioButtons() {
+            document.querySelectorAll('input[type="radio"]').forEach(radio => radio.checked = false);
+        }
+    </script>
+</body>
+</html>
+
