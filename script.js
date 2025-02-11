@@ -49,7 +49,7 @@ document.getElementById('omrForm').addEventListener('submit', function(event) {
 });
 
 document.getElementById('checkAnswersBtn').addEventListener('click', function() {
-    document.getElementById("submitbtn").style.display = 'show';
+    document.getElementById("submitbtn").style.display = 'block';
     const numQuestions = document.getElementById('numQuestions').value;
     const answersContainer = document.getElementById('answersContainer');
     const scoreContainer = document.getElementById('score');
