@@ -1,6 +1,8 @@
 let selectedAnswers = []; // Array to hold the user's selected answers
 document.getElementById('generateBtn').addEventListener('click', function() {
     document.getElementById("checkAnswersBtn").style.display = 'none';
+    document.getElementById("submitbtn").style.display = 'block';
+    
     const startNumber = parseInt(document.getElementById('startNumber').value) || 1; // Get starting number
     const numQuestions = document.getElementById('numQuestions').value;
     const questionsContainer = document.getElementById('questionsContainer');
@@ -49,7 +51,7 @@ document.getElementById('omrForm').addEventListener('submit', function(event) {
 });
 
 document.getElementById('checkAnswersBtn').addEventListener('click', function() {
-    document.getElementById("submitbtn").style.display = 'block';
+    document.getElementById("submitbtn").style.display = 'none';
     document.getElementById("checkAnswersBtn").style.display = 'none';
     
     const numQuestions = document.getElementById('numQuestions').value;
