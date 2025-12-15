@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Flashcards</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f5f5f5;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      margin: 0;
+      padding: 20px;
+    }
+
+    h1 {
+      margin-bottom: 10px;
+    }
+
+    .card-container {
+      width: 320px;
+      height: 200px;
+      perspective: 1000px;
+      margin-top: 20px;
+    }
+
+    .card {
+      width: 100%;
+      height: 100%;
+      position: relative;
+      transform-style: preserve-3d;
+      transition: transform 0.5s;
+      cursor: pointer;
+    }
+
+    .card.flip {
+      transform: rotateY(180deg);
+    }
+
+    .side {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      backface-visibility: hidden;
+      border-radius: 10px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 15px;
+      box-sizing: border-box;
+      font-size: 18px;
+      text-align: center;
+    }
+
+    .front {
+      background: #ffffff;
+    }
+
+    .back {
+      background: #1e88e5;
+      color: white;
+      transform: rotateY(180deg);
+    }
+
+    .controls {
+      margin-top: 15px;
+      display: flex;
+      gap: 10px;
+      align-items: center;
+    }
+
+    button {
+      padding: 6px 12px;
+      border-radius: 5px;
+      border: none;
+      background: #1e88e5;
+      color: white;
+      cursor: pointer;
+      font-size: 14px;
+    }
+
+    button:disabled {
+      background: #aaa;
+      cursor: not-allowed;
+    }
+
+    .index-info {
+      font-size: 14px;
+    }
+
+    .json-input-area {
+      margin-top: 25px;
+      width: 100%;
+      max-width: 600px;
+    }
+
+    textarea {
+      width: 100%;
+      height: 180px;
+      box-sizing: border-box;
+      padding: 10px;
+      font-family: Consolas, "Courier New", monospace;
+      font-size: 13px;
+    }
+
+    .error {
+      color: red;
+      font-size: 13px;
+      margin-top: 5px;
+    }
+  </style>
+</head>
+<body>
+  <h1>Flashcards</h1>
+  <p>কার্ডে ক্লিক করলে সামনে/পিছন ঘুরবে।</p>
+
+  <div class="card-container">
+    <div class="card" id="card">
+      <div class="side front" id="card-front"></div>
+      <div class="side back" id="card-back"></div>
+    </div>
+  </div>
+
+  <div class="controls">
+    <button id="prev-btn">Prev</button>
+    <span class="index-info" id="index-info"></span>
+    <button id="next-btn">Next</button>
+  </div>
+
+  <div class="json-input-area">
+    <h3>JSON data দিন (input format)</h3>
+    <p>ফরম্যাট:</p>
+    <pre>
+{
+  "card1": { "front": "Q1", "back": "A1" },
+  "card2": { "front": "Q2", "back": "A2" }
+}
+    </pre>
+    <textarea id="json-input"></textarea>
+    <button id="load-json-btn">Load JSON</button>
+    <div class="error" id="error-msg"></div>
+  </div>
+
+  <script>
+    // Default data (আপনি চাইলে এখান থেকেই এডিট করতে পারেন)
+    let cardsData = {
+      card1: { front: "2 + 2 = ?", back: "4" },
+      card2: { front: "Capital of Bangladesh?", back: "Dhaka" },
+      card3: { front: "HTML stands for?", back: "HyperText Markup Language" }
+    };
+
+    // Elements
+    const cardEl = document.getElementById("card");
+    const frontEl = document.getElementById("card-front");
+    const backEl = document.getElementById("card-back");
+    const prevBtn = document.getElementById("prev-btn");
+    const nextBtn = document.getElementById("next-btn");
+    const indexInfoEl = document.getElementById("index-info");
+    const jsonInput = document.getElementById("json-input");
+    const loadJsonBtn = document.getElementById("load-json-btn");
+    const errorMsg = document.getElementById("error-msg");
+
+    let cardArray = [];
+    let currentIndex = 0;
+    let flipped = false;
+
+    function loadFromObject(obj) {
+      cardArray = Object.keys(obj).map(key => obj[key]);
+      currentIndex = 0;
+      flipped = false;
+      cardEl.classList.remove("flip");
+      renderCard();
+    }
+
+    function renderCard() {
+      if (cardArray.length === 0) {
+        frontEl.textContent = "No cards loaded";
+        backEl.textContent = "";
+        indexInfoEl.textContent = "0 / 0";
+        prevBtn.disabled = true;
+        nextBtn.disabled = true;
+        return;
+      }
+
+      const card = cardArray[currentIndex];
+      frontEl.textContent = card.front || "";
+      backEl.textContent = card.back || "";
+      indexInfoEl.textContent = (currentIndex + 1) + " / " + cardArray.length;
+
+      prevBtn.disabled = currentIndex === 0;
+      nextBtn.disabled = currentIndex === cardArray.length - 1;
+    }
+
+    // Card click -> flip
+    cardEl.addEventListener("click", () => {
+      flipped = !flipped;
+      if (flipped) {
+        cardEl.classList.add("flip");
+      } else {
+        cardEl.classList.remove("flip");
+      }
+    });
+
+    // Next / Prev
+    nextBtn.addEventListener("click", () => {
+      if (currentIndex < cardArray.length - 1) {
+        currentIndex++;
+        flipped = false;
+        cardEl.classList.remove("flip");
+        renderCard();
+      }
+    });
+
+    prevBtn.addEventListener("click", () => {
+      if (currentIndex > 0) {
+        currentIndex--;
+        flipped = false;
+        cardEl.classList.remove("flip");
+        renderCard();
+      }
+    });
+
+    // Load JSON from textarea
+    loadJsonBtn.addEventListener("click", () => {
+      errorMsg.textContent = "";
+      try {
+        const text = jsonInput.value.trim();
+        if (!text) {
+          errorMsg.textContent = "JSON ফাঁকা রাখা যাবে না।";
+          return;
+        }
+        const parsed = JSON.parse(text);
+
+        // Expecting { card1:{front,back}, card2:{front,back}, ... }
+        if (typeof parsed !== "object" || Array.isArray(parsed)) {
+          errorMsg.textContent = "Root অবশ্যই একটি object হতে হবে (array নয়)।";
+          return;
+        }
+
+        loadFromObject(parsed);
+      } catch (e) {
+        errorMsg.textContent = "JSON ঠিক নয়: " + e.message;
+      }
+    });
+
+    // Initial setup
+    // Default JSON টেক্সটএরিয়াতে দেখানো:
+    jsonInput.value = JSON.stringify(cardsData, null, 2);
+    loadFromObject(cardsData);
+  </script>
+</body>
+</html>
