@@ -119,9 +119,15 @@
       margin-top: 5px;
     }
 
-    /* -------------------------
-       RESPONSIVE BREAKPOINTS
-       ------------------------- */
+    input[type="text"] {
+      width: 100%;
+      padding: 10px;
+      margin-bottom: 10px;
+      border-radius: 6px;
+      border: 1px solid #ccc;
+      font-size: 1rem;
+      box-sizing: border-box;
+    }
 
     @media (max-width: 600px) {
       h1 {
@@ -182,6 +188,11 @@
     <textarea id="json-input"></textarea>
     <button id="load-json-btn">Load JSON</button>
     <div class="error" id="error-msg"></div>
+
+    <h3>Add New Card</h3>
+    <input id="new-front" type="text" placeholder="Front text">
+    <input id="new-back" type="text" placeholder="Back text">
+    <button id="add-card-btn">Add Card</button>
   </div>
 
   <script>
@@ -200,6 +211,10 @@
     const jsonInput = document.getElementById("json-input");
     const loadJsonBtn = document.getElementById("load-json-btn");
     const errorMsg = document.getElementById("error-msg");
+
+    const newFront = document.getElementById("new-front");
+    const newBack = document.getElementById("new-back");
+    const addCardBtn = document.getElementById("add-card-btn");
 
     let cardArray = [];
     let currentIndex = 0;
@@ -258,16 +273,40 @@
     loadJsonBtn.addEventListener("click", () => {
       errorMsg.textContent = "";
       try {
-        const text = jsonInput.value.trim();
-        if (!text) {
-          errorMsg.textContent = "JSON cannot be empty.";
-          return;
-        }
-        const parsed = JSON.parse(text);
+        const parsed = JSON.parse(jsonInput.value.trim());
         loadFromObject(parsed);
       } catch (e) {
         errorMsg.textContent = "Invalid JSON: " + e.message;
       }
+    });
+
+    addCardBtn.addEventListener("click", () => {
+      const front = newFront.value.trim();
+      const back = newBack.value.trim();
+
+      if (!front || !back) {
+        errorMsg.textContent = "Front and Back cannot be empty.";
+        return;
+      }
+
+      errorMsg.textContent = "";
+
+      let currentJSON;
+      try {
+        currentJSON = JSON.parse(jsonInput.value.trim());
+      } catch (e) {
+        errorMsg.textContent = "Fix JSON before adding a new card.";
+        return;
+      }
+
+      const newKey = "card" + (Object.keys(currentJSON).length + 1);
+      currentJSON[newKey] = { front, back };
+
+      jsonInput.value = JSON.stringify(currentJSON, null, 2);
+      loadFromObject(currentJSON);
+
+      newFront.value = "";
+      newBack.value = "";
     });
 
     jsonInput.value = JSON.stringify(cardsData, null, 2);
