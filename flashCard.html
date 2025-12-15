@@ -2,7 +2,9 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Flashcards</title>
+
   <style>
     body {
       font-family: Arial, sans-serif;
@@ -16,11 +18,13 @@
 
     h1 {
       margin-bottom: 10px;
+      font-size: 2rem;
     }
 
     .card-container {
-      width: 320px;
-      height: 200px;
+      width: 90%;
+      max-width: 350px;
+      height: 220px;
       perspective: 1000px;
       margin-top: 20px;
     }
@@ -43,14 +47,14 @@
       width: 100%;
       height: 100%;
       backface-visibility: hidden;
-      border-radius: 10px;
+      border-radius: 12px;
       box-shadow: 0 4px 12px rgba(0,0,0,0.15);
       display: flex;
       justify-content: center;
       align-items: center;
       padding: 15px;
       box-sizing: border-box;
-      font-size: 18px;
+      font-size: 1.1rem;
       text-align: center;
     }
 
@@ -69,16 +73,18 @@
       display: flex;
       gap: 10px;
       align-items: center;
+      flex-wrap: wrap;
+      justify-content: center;
     }
 
     button {
-      padding: 6px 12px;
-      border-radius: 5px;
+      padding: 8px 14px;
+      border-radius: 6px;
       border: none;
       background: #1e88e5;
       color: white;
       cursor: pointer;
-      font-size: 14px;
+      font-size: 1rem;
     }
 
     button:disabled {
@@ -87,13 +93,14 @@
     }
 
     .index-info {
-      font-size: 14px;
+      font-size: 1rem;
+      margin-top: 5px;
     }
 
     .json-input-area {
-      margin-top: 25px;
+      margin-top: 30px;
       width: 100%;
-      max-width: 600px;
+      max-width: 650px;
     }
 
     textarea {
@@ -101,20 +108,61 @@
       height: 180px;
       box-sizing: border-box;
       padding: 10px;
-      font-family: Consolas, "Courier New", monospace;
-      font-size: 13px;
+      font-family: Consolas, monospace;
+      font-size: 0.9rem;
+      border-radius: 6px;
     }
 
     .error {
       color: red;
-      font-size: 13px;
+      font-size: 0.9rem;
       margin-top: 5px;
+    }
+
+    /* -------------------------
+       RESPONSIVE BREAKPOINTS
+       ------------------------- */
+
+    @media (max-width: 600px) {
+      h1 {
+        font-size: 1.6rem;
+      }
+
+      .card-container {
+        height: 180px;
+      }
+
+      .side {
+        font-size: 1rem;
+        padding: 10px;
+      }
+
+      button {
+        padding: 7px 12px;
+        font-size: 0.9rem;
+      }
+
+      textarea {
+        height: 150px;
+      }
+    }
+
+    @media (min-width: 900px) {
+      .card-container {
+        max-width: 420px;
+        height: 260px;
+      }
+
+      .side {
+        font-size: 1.3rem;
+      }
     }
   </style>
 </head>
+
 <body>
   <h1>Flashcards</h1>
-  <p>কার্ডে ক্লিক করলে সামনে/পিছন ঘুরবে।</p>
+  <p>Tap or click the card to flip it.</p>
 
   <div class="card-container">
     <div class="card" id="card">
@@ -130,28 +178,19 @@
   </div>
 
   <div class="json-input-area">
-    <h3>JSON data দিন (input format)</h3>
-    <p>ফরম্যাট:</p>
-    <pre>
-{
-  "card1": { "front": "Q1", "back": "A1" },
-  "card2": { "front": "Q2", "back": "A2" }
-}
-    </pre>
+    <h3>JSON Input</h3>
     <textarea id="json-input"></textarea>
     <button id="load-json-btn">Load JSON</button>
     <div class="error" id="error-msg"></div>
   </div>
 
   <script>
-    // Default data (আপনি চাইলে এখান থেকেই এডিট করতে পারেন)
     let cardsData = {
       card1: { front: "2 + 2 = ?", back: "4" },
       card2: { front: "Capital of Bangladesh?", back: "Dhaka" },
       card3: { front: "HTML stands for?", back: "HyperText Markup Language" }
     };
 
-    // Elements
     const cardEl = document.getElementById("card");
     const frontEl = document.getElementById("card-front");
     const backEl = document.getElementById("card-back");
@@ -193,17 +232,11 @@
       nextBtn.disabled = currentIndex === cardArray.length - 1;
     }
 
-    // Card click -> flip
     cardEl.addEventListener("click", () => {
       flipped = !flipped;
-      if (flipped) {
-        cardEl.classList.add("flip");
-      } else {
-        cardEl.classList.remove("flip");
-      }
+      cardEl.classList.toggle("flip", flipped);
     });
 
-    // Next / Prev
     nextBtn.addEventListener("click", () => {
       if (currentIndex < cardArray.length - 1) {
         currentIndex++;
@@ -222,31 +255,21 @@
       }
     });
 
-    // Load JSON from textarea
     loadJsonBtn.addEventListener("click", () => {
       errorMsg.textContent = "";
       try {
         const text = jsonInput.value.trim();
         if (!text) {
-          errorMsg.textContent = "JSON ফাঁকা রাখা যাবে না।";
+          errorMsg.textContent = "JSON cannot be empty.";
           return;
         }
         const parsed = JSON.parse(text);
-
-        // Expecting { card1:{front,back}, card2:{front,back}, ... }
-        if (typeof parsed !== "object" || Array.isArray(parsed)) {
-          errorMsg.textContent = "Root অবশ্যই একটি object হতে হবে (array নয়)।";
-          return;
-        }
-
         loadFromObject(parsed);
       } catch (e) {
-        errorMsg.textContent = "JSON ঠিক নয়: " + e.message;
+        errorMsg.textContent = "Invalid JSON: " + e.message;
       }
     });
 
-    // Initial setup
-    // Default JSON টেক্সটএরিয়াতে দেখানো:
     jsonInput.value = JSON.stringify(cardsData, null, 2);
     loadFromObject(cardsData);
   </script>
