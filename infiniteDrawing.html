@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Infinite Scroll Drawing — LocalStorage, Export/Import</title>
+  <style>
+    :root {
+      --bg: #0f172a;
+      --panel: #111827;
+      --text: #e5e7eb;
+      --muted: #9ca3af;
+      --primary: #3b82f6;
+      --accent: #22c55e;
+      --border: #1f2937;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto;
+      background: linear-gradient(180deg, #0b1221, #0f172a);
+      color: var(--text);
+    }
+    header {
+      position: sticky; top: 0; z-index: 10;
+      padding: 12px 16px;
+      border-bottom: 1px solid var(--border);
+      background: rgba(15,23,42,0.9);
+      backdrop-filter: blur(8px);
+    }
+    .title { font-weight: 700; font-size: 18px; }
+    .toolbar {
+      display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px;
+    }
+    button, label[role="button"] {
+      background: #0b253f;
+      color: var(--text);
+      border: 1px solid #1e3a8a;
+      border-radius: 8px;
+      padding: 8px 12px;
+      cursor: pointer; font-weight: 600;
+    }
+    button.primary { background: #0a2a52; border-color: #2563eb; }
+    button.success { background: #06351f; border-color: #16a34a; }
+    button.warning { background: #3a2708; border-color: #f59e0b; }
+    .controls {
+      display: flex; gap: 10px; align-items: center; flex-wrap: wrap;
+      margin-top: 10px;
+    }
+    .label { font-size: 13px; color: var(--muted); }
+    input[type="color"], input[type="range"] { accent-color: var(--primary); }
+    main { padding: 12px 16px; }
+    .section {
+      margin: 16px auto;
+      max-width: 1000px;
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 12px; overflow: hidden;
+    }
+    .section-head {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 8px 12px; border-bottom: 1px solid var(--border);
+      font-size: 12px; color: var(--muted);
+    }
+    .canvas-wrap {
+      position: relative;
+      background: #0a0f1c;
+      border-top: 1px dashed #334155;
+    }
+    canvas {
+      display: block;
+      width: 100%;
+      height: 800px; /* দৃশ্যমান উচ্চতা */
+      touch-action: none;
+    }
+    .hint { font-size: 12px; color: var(--muted); margin-top: 6px; }
+    .file-input { display: none; }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="title">Infinite Scroll Drawing</div>
+    <div class="toolbar">
+      <button id="exportBtn" class="success">Export JSON</button>
+      <label for="importInput" role="button" class="warning">Import JSON</label>
+      <input id="importInput" class="file-input" type="file" accept="application/json" />
+      <span class="hint">ব্রাশ রঙ/সাইজ নিচে। স্ক্রল করলেই নতুন সেকশন যুক্ত হবে।</span>
+    </div>
+    <div class="controls">
+      <span class="label">Brush color</span>
+      <input type="color" id="colorPicker" value="#ffffff" />
+      <span class="label" style="margin-left:8px;">Brush size</span>
+      <input type="range" id="sizePicker" min="1" max="36" value="4" />
+      <span id="sizeLabel" class="label">4 px</span>
+      <button id="eraserBtn">Eraser</button>
+      <button id="penBtn" class="primary">Pen</button>
+      <button id="clearSectionBtn">Clear section</button>
+    </div>
+  </header>
+
+  <main>
+    <div id="sectionsContainer"></div>
+  </main>
+
+  <script>
+    // ---------- Config / State ----------
+    const STORAGE_KEY = 'infiniteDrawing_v1';
+    const TILE_HEIGHT = 1600; // অভ্যন্তরীণ পিক্সেল উচ্চতা (উচ্চ DPI স্কেল হবে)
+    const MIN_SECTIONS = 3;   // শুরুতে কমপক্ষে কতটি সেকশন থাকবে
+
+    const container = document.getElementById('sectionsContainer');
+    const exportBtn = document.getElementById('exportBtn');
+    const importInput = document.getElementById('importInput');
+    const colorPicker = document.getElementById('colorPicker');
+    const sizePicker  = document.getElementById('sizePicker');
+    const sizeLabel   = document.getElementById('sizeLabel');
+    const eraserBtn   = document.getElementById('eraserBtn');
+    const penBtn      = document.getElementById('penBtn');
+    const clearSectionBtn = document.getElementById('clearSectionBtn');
+
+    let mode = 'pen'; // 'pen' | 'eraser'
+    let sections = []; // [{index, canvas, ctx, dataURL}]
+    let drawing = false;
+    let activeSection = null;
+
+    // ---------- Helpers ----------
+    function createSection(index, dataURL = null) {
+      const sec = document.createElement('div');
+      sec.className = 'section';
+
+      const head = document.createElement('div');
+      head.className = 'section-head';
+      head.innerHTML = `<span>Section #${index+1}</span><span>${dataURL ? 'Loaded' : 'Empty'}</span>`;
+
+      const wrap = document.createElement('div');
+      wrap.className = 'canvas-wrap';
+
+      const canvas = document.createElement('canvas');
+      const dpr = window.devicePixelRatio || 1;
+      // অভ্যন্তরীণ সাইজ উচ্চ DPI অনুযায়ী
+      canvas.width = Math.floor(container.clientWidth * dpr);
+      canvas.height = Math.floor(TILE_HEIGHT * dpr);
+      canvas.style.height = (canvas.height / dpr) + 'px';
+
+      const ctx = canvas.getContext('2d');
+      ctx.imageSmoothingEnabled = true;
+
+      // ব্যাকগ্রাউন্ড
+      ctx.fillStyle = '#0a0f1c';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      // যদি ডেটা থাকে, রিস্টোর
+      if (dataURL) {
+        const img = new Image();
+        img.onload = () => { ctx.drawImage(img, 0, 0, canvas.width, canvas.height); };
+        img.src = dataURL;
+      }
+
+      wrap.appendChild(canvas);
+      sec.appendChild(head);
+      sec.appendChild(wrap);
+      container.appendChild(sec);
+
+      const sectionObj = { index, canvas, ctx, dataURL: dataURL || null };
+      sections[index] = sectionObj;
+
+      // ইভেন্ট
+      canvas.addEventListener('pointerdown', (e) => beginStroke(e, sectionObj));
+      canvas.addEventListener('pointermove', (e) => continueStroke(e, sectionObj));
+      window.addEventListener('pointerup', () => endStroke(sectionObj));
+      canvas.addEventListener('pointerleave', () => endStroke(sectionObj));
+
+      return sectionObj;
+    }
+
+    function getPosInCanvas(e, canvas) {
+  const rect = canvas.getBoundingClientRect();
+  const scaleX = canvas.width / rect.width;
+  const scaleY = canvas.height / rect.height;
+  return {
+    x: (e.clientX - rect.left) * scaleX,
+    y: (e.clientY - rect.top) * scaleY
+  };
+}
+
+
+    function beginStroke(e, section) {
+      activeSection = section;
+      drawing = true;
+      const { ctx, canvas } = section;
+      const { x, y } = getPosInCanvas(e, canvas);
+
+      if (mode === 'pen') {
+        ctx.strokeStyle = colorPicker.value;
+        ctx.lineWidth = parseFloat(sizePicker.value) * (window.devicePixelRatio || 1);
+        ctx.globalCompositeOperation = 'source-over';
+      } else {
+        ctx.strokeStyle = 'rgba(0,0,0,1)';
+        ctx.lineWidth = parseFloat(sizePicker.value) * (window.devicePixelRatio || 1) * 2;
+        ctx.globalCompositeOperation = 'destination-out';
+      }
+
+      ctx.lineCap = 'round';
+      ctx.lineJoin = 'round';
+      ctx.beginPath();
+      ctx.moveTo(x, y);
+    }
+
+    function continueStroke(e, section) {
+      if (!drawing || activeSection !== section) return;
+      const { ctx, canvas } = section;
+      const { x, y } = getPosInCanvas(e, canvas);
+      ctx.lineTo(x, y);
+      ctx.stroke();
+    }
+
+    function endStroke(section) {
+      if (!drawing || activeSection !== section) return;
+      drawing = false;
+      section.ctx.closePath();
+      // সেভ
+      section.dataURL = section.canvas.toDataURL('image/png');
+      persistToLocalStorage();
+    }
+
+    function persistToLocalStorage() {
+      const payload = {
+        version: 1,
+        tileHeight: TILE_HEIGHT,
+        createdAt: new Date().toISOString(),
+        sections: sections.map(s => ({ index: s.index, dataURL: s.dataURL }))
+      };
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
+      } catch (err) {
+        console.warn('LocalStorage save failed', err);
+      }
+    }
+
+    function loadFromLocalStorage() {
+      const text = localStorage.getItem(STORAGE_KEY);
+      if (!text) return null;
+      try {
+        return JSON.parse(text);
+      } catch {
+        return null;
+      }
+    }
+
+    // ---------- Infinite scroll ----------
+    function ensureMoreSectionsIfNeeded() {
+      const scrolledBottom = window.scrollY + window.innerHeight;
+      const docHeight = document.documentElement.scrollHeight;
+
+      const gap = docHeight - scrolledBottom;
+      // নিচের দিকে যদি কম জায়গা থাকে, নতুন সেকশন যোগ করো
+      if (gap < 800) {
+        addSection();
+        addSection();
+      }
+    }
+
+    function addSection(dataURL = null) {
+      const idx = sections.length;
+      createSection(idx, dataURL);
+    }
+
+    window.addEventListener('scroll', ensureMoreSectionsIfNeeded);
+
+    // ---------- Export / Import ----------
+    exportBtn.addEventListener('click', () => {
+      // আপ-টু-ডেট ডেটাURL নিশ্চিত করো
+      sections.forEach(s => {
+        s.dataURL = s.canvas.toDataURL('image/png');
+      });
+      const payload = {
+        version: 1,
+        tileHeight: TILE_HEIGHT,
+        createdAt: new Date().toISOString(),
+        sections: sections.map(s => ({ index: s.index, dataURL: s.dataURL }))
+      };
+      const blob = new Blob([JSON.stringify(payload)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'infinite-drawing.json';
+      a.click();
+      URL.revokeObjectURL(url);
+    });
+
+    importInput.addEventListener('change', async (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+      try {
+        const text = await file.text();
+        const data = JSON.parse(text);
+        if (!data.sections || !Array.isArray(data.sections)) {
+          alert('Invalid JSON: sections array missing.');
+          return;
+        }
+        // পুরনো সেকশন মুছো
+        sections = [];
+        container.innerHTML = '';
+        // নতুন সেকশন লোড করো
+        data.sections.forEach((item, i) => {
+          createSection(i, item.dataURL || null);
+        });
+        // কমপক্ষে একটি বাড়তি সেকশন যোগ করো যাতে স্ক্রল করা যায়
+        addSection();
+        persistToLocalStorage();
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      } catch (err) {
+        alert('Failed to import JSON.');
+      } finally {
+        importInput.value = '';
+      }
+    });
+
+    // ---------- Controls ----------
+    sizePicker.addEventListener('input', () => {
+      sizeLabel.textContent = sizePicker.value + ' px';
+    });
+    eraserBtn.addEventListener('click', () => {
+      mode = 'eraser';
+      eraserBtn.classList.add('primary');
+      penBtn.classList.remove('primary');
+    });
+    penBtn.addEventListener('click', () => {
+      mode = 'pen';
+      penBtn.classList.add('primary');
+      eraserBtn.classList.remove('primary');
+    });
+    clearSectionBtn.addEventListener('click', () => {
+      const sec = findVisibleSection();
+      if (!sec) return;
+      const { ctx, canvas } = sec;
+      ctx.globalCompositeOperation = 'source-over';
+      ctx.fillStyle = '#0a0f1c';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      sec.dataURL = canvas.toDataURL('image/png');
+      persistToLocalStorage();
+    });
+
+    function findVisibleSection() {
+      // viewport-এর কেন্দ্রের সাথে যে সেকশন মিলে তাকে বেছে নাও
+      const centerY = window.scrollY + window.innerHeight / 2;
+      let best = null, bestDist = Infinity;
+      sections.forEach(s => {
+        const rect = s.canvas.getBoundingClientRect();
+        const top = rect.top + window.scrollY;
+        const bottom = top + rect.height;
+        const mid = (top + bottom) / 2;
+        const dist = Math.abs(mid - centerY);
+        if (dist < bestDist) { bestDist = dist; best = s; }
+      });
+      return best;
+    }
+
+    // ---------- Resize handling ----------
+    function resizeAllCanvases() {
+      const dpr = window.devicePixelRatio || 1;
+      sections.forEach(s => {
+        const oldData = s.canvas.toDataURL('image/png');
+        s.canvas.width = Math.floor(container.clientWidth * dpr);
+        s.canvas.height = Math.floor(TILE_HEIGHT * dpr);
+        s.canvas.style.height = (s.canvas.height / dpr) + 'px';
+        s.ctx.imageSmoothingEnabled = true;
+        const img = new Image();
+        img.onload = () => { s.ctx.drawImage(img, 0, 0, s.canvas.width, s.canvas.height); };
+        img.src = oldData;
+      });
+    }
+    window.addEventListener('resize', () => {
+      // থ্রটল না করেও ছোট প্রোজেক্টে চলবে
+      resizeAllCanvases();
+    });
+
+    // ---------- Init ----------
+    (function init() {
+      const data = loadFromLocalStorage();
+      if (data && Array.isArray(data.sections) && data.sections.length > 0) {
+        data.sections.forEach((item, i) => createSection(i, item.dataURL || null));
+        addSection(); // স্ক্রল করার জন্য অতিরিক্ত
+      } else {
+        for (let i = 0; i < MIN_SECTIONS; i++) addSection();
+      }
+      ensureMoreSectionsIfNeeded();
+    })();
+  </script>
+</body>
+</html>
