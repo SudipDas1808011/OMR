@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Drawable Flashcards (Front/Back, Save/Load, Play)</title>
+  <title>Drawable Flashcards (Randomized Play)</title>
   <style>
     :root {
       --bg: #0f172a;
@@ -57,10 +57,15 @@
       background: #0a2a52;
       border-color: #2563eb;
     }
+    button:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
     button.primary { background: #0a2a52; border-color: #2563eb; }
     button.success { background: #06351f; border-color: #16a34a; }
     button.warning { background: #3a2708; border-color: #f59e0b; }
     button.danger { background: #3a0a0a; border-color: #ef4444; }
+    
     .row {
       display: grid;
       grid-template-columns: 320px 1fr;
@@ -121,7 +126,7 @@
       display: block;
       width: 100%;
       height: 520px;
-      touch-action: none; /* pointer events for pen/touch */
+      touch-action: none;
       background: #0a0f1c;
     }
     .card-nav {
@@ -138,18 +143,14 @@
       font-size: 12px;
       color: #93c5fd;
     }
-    .file-input {
-      display: none;
-    }
-    .hint {
-      margin-top: 6px;
-      font-size: 12px;
-      color: #9ca3af;
-    }
+    .file-input { display: none; }
+    .hint { margin-top: 6px; font-size: 12px; color: #9ca3af; }
     .grid {
       display: grid;
       grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
       gap: 10px;
+      max-height: 400px;
+      overflow-y: auto;
     }
     .thumb {
       border: 1px solid #334155;
@@ -159,7 +160,7 @@
       cursor: pointer;
     }
     .thumb img {
-      width: 100%; height: 100px; object-fit: cover;
+      width: 100%; height: 80px; object-fit: cover;
       display: block;
     }
     .thumb .meta {
@@ -167,20 +168,18 @@
       display: flex; justify-content: space-between; align-items: center;
     }
     .thumb.active { outline: 2px solid #2563eb; }
-    .playbar {
-      display: flex; gap: 8px; align-items: center;
-    }
+    .playbar { display: flex; gap: 8px; align-items: center; }
   </style>
 </head>
 <body>
   <header>
-    <div class="title">Drawable Flashcards — Front/Back, Save/Load, Play</div>
+    <div class="title">Drawable Flashcards — Front/Back, Save/Load, Random Play</div>
     <div class="toolbar">
       <button id="newCardBtn" class="primary">+ New Card</button>
       <button id="saveBtn" class="success">Save</button>
       <label for="fileInput" role="button" class="warning">Load JSON</label>
       <input id="fileInput" class="file-input" type="file" accept="application/json" />
-      <button id="playBtn">Play</button>
+      <button id="playBtn">Play (Random)</button>
       <button id="stopBtn" class="danger" style="display:none;">Stop</button>
       <span class="badge" id="statusBadge">Edit mode</span>
     </div>
@@ -188,26 +187,28 @@
 
   <main class="row">
     <aside class="panel">
-      <h3>Drawing tools</h3>
-      <div class="controls">
-        <div class="control-group">
-          <span class="label">Brush color</span>
-          <input type="color" id="colorPicker" value="#ffffff" />
+      <div id="editorControls">
+        <h3>Drawing tools</h3>
+        <div class="controls">
+          <div class="control-group">
+            <span class="label">Brush color</span>
+            <input type="color" id="colorPicker" value="#ffffff" />
+          </div>
+          <div class="control-group">
+            <span class="label">Brush size</span>
+            <input type="range" id="sizePicker" min="1" max="36" value="4" />
+            <span id="sizeLabel" class="badge">4 px</span>
+          </div>
+          <div class="control-group">
+            <span class="label">Side</span>
+            <button id="frontSideBtn" class="primary">Front</button>
+            <button id="backSideBtn">Back</button>
+          </div>
+          <div class="control-group">
+            <button id="clearBtn" class="danger">Clear</button>
+          </div>
+          <div class="hint">Pen, mouse বা touch ব্যবহার করা যাবে।</div>
         </div>
-        <div class="control-group">
-          <span class="label">Brush size</span>
-          <input type="range" id="sizePicker" min="1" max="36" value="4" />
-          <span id="sizeLabel" class="badge">4 px</span>
-        </div>
-        <div class="control-group">
-          <span class="label">Side</span>
-          <button id="frontSideBtn" class="primary">Front</button>
-          <button id="backSideBtn">Back</button>
-        </div>
-        <div class="control-group">
-          <button id="clearBtn" class="danger">Clear</button>
-        </div>
-        <div class="hint">Pen, mouse বা touch—সবই চলবে. Pointer events সক্রিয় আছে।</div>
       </div>
 
       <h3 style="margin-top:16px;">Cards</h3>
@@ -228,12 +229,12 @@
       </div>
 
       <div class="canvas-wrap">
-        <div class="side-label">Draw here</div>
+        <div class="side-label" id="canvasHint">Draw here</div>
         <canvas id="drawCanvas" width="1280" height="720"></canvas>
       </div>
 
       <div class="playbar">
-        <span class="hint">Tip: Flip (Space), Prev (←), Next (→). Save করে JSON রাখতে ভুলবে না।</span>
+        <span class="hint">Shortcut: Flip (Space), Prev (←), Next (→).</span>
       </div>
     </section>
   </main>
@@ -242,34 +243,32 @@
     // ---------- State ----------
     const canvas = document.getElementById('drawCanvas');
     const ctx = canvas.getContext('2d');
-
     const colorPicker = document.getElementById('colorPicker');
     const sizePicker  = document.getElementById('sizePicker');
     const sizeLabel   = document.getElementById('sizeLabel');
-
     const frontSideBtn = document.getElementById('frontSideBtn');
     const backSideBtn  = document.getElementById('backSideBtn');
     const clearBtn     = document.getElementById('clearBtn');
-
     const newCardBtn   = document.getElementById('newCardBtn');
     const saveBtn      = document.getElementById('saveBtn');
     const fileInput    = document.getElementById('fileInput');
-
     const playBtn      = document.getElementById('playBtn');
     const stopBtn      = document.getElementById('stopBtn');
     const statusBadge  = document.getElementById('statusBadge');
-
     const prevBtn      = document.getElementById('prevBtn');
     const flipBtn      = document.getElementById('flipBtn');
     const nextBtn      = document.getElementById('nextBtn');
-
     const cardIndexLabel = document.getElementById('cardIndexLabel');
     const cardCountLabel = document.getElementById('cardCountLabel');
     const sideLabel      = document.getElementById('sideLabel');
     const thumbGrid      = document.getElementById('thumbGrid');
+    const editorControls = document.getElementById('editorControls');
+    const canvasHint     = document.getElementById('canvasHint');
 
-    let cards = []; // { front: dataURL, back: dataURL }
-    let currentIndex = -1;
+    let cards = []; 
+    let shuffledOrder = []; // Stores indices for random play
+    let currentIndex = 0;   // Current position (either in cards or shuffledOrder)
+    let originalIndex = 0;  // Remember position before playing
     let currentSide = 'front';
     let drawing = false;
     let playing = false;
@@ -279,6 +278,7 @@
       ctx.fillStyle = '#0a0f1c';
       ctx.fillRect(0,0,canvas.width,canvas.height);
     }
+
     function ensureAtLeastOneCard() {
       if (cards.length === 0) {
         cards.push({ front: null, back: null });
@@ -287,6 +287,7 @@
       updateUI();
       loadSideToCanvas();
     }
+
     initCanvas();
     ensureAtLeastOneCard();
 
@@ -328,14 +329,13 @@
       renderThumbs();
     }
 
-    // Pointer events (pen/mouse/touch)
     canvas.addEventListener('pointerdown', beginStroke);
     canvas.addEventListener('pointermove', continueStroke);
     window.addEventListener('pointerup', endStroke);
-    canvas.addEventListener('pointerleave', endStroke);
 
-    // ---------- Side / Canvas sync ----------
+    // ---------- Logic ----------
     function saveCanvasToSide() {
+      if (playing) return;
       const dataURL = canvas.toDataURL('image/png');
       if (!cards[currentIndex]) return;
       cards[currentIndex][currentSide] = dataURL;
@@ -343,7 +343,10 @@
 
     function loadSideToCanvas() {
       initCanvas();
-      const dataURL = cards[currentIndex]?.[currentSide];
+      // Determine which card index to show
+      const actualIndex = playing ? shuffledOrder[currentIndex] : currentIndex;
+      const dataURL = cards[actualIndex]?.[currentSide];
+      
       if (dataURL) {
         const img = new Image();
         img.onload = () => {
@@ -355,24 +358,12 @@
 
     function setSide(side) {
       currentSide = side;
-      sideLabel.textContent = side === 'front' ? 'Front' : 'Back';
+      sideLabel.textContent = side.charAt(0).toUpperCase() + side.slice(1);
       frontSideBtn.classList.toggle('primary', side === 'front');
       backSideBtn.classList.toggle('primary', side === 'back');
       loadSideToCanvas();
-      highlightActiveThumb();
     }
 
-    frontSideBtn.addEventListener('click', () => setSide('front'));
-    backSideBtn.addEventListener('click',  () => setSide('back'));
-
-    clearBtn.addEventListener('click', () => {
-      if (playing) return;
-      initCanvas();
-      saveCanvasToSide();
-      renderThumbs();
-    });
-
-    // ---------- Cards navigation ----------
     function updateUI() {
       cardIndexLabel.textContent = (currentIndex + 1);
       cardCountLabel.textContent = cards.length;
@@ -386,22 +377,23 @@
       highlightActiveThumb();
     }
 
+    // ---------- Handlers ----------
     prevBtn.addEventListener('click', () => goTo(currentIndex - 1));
     nextBtn.addEventListener('click', () => goTo(currentIndex + 1));
-    flipBtn.addEventListener('click', () => {
-      setSide(currentSide === 'front' ? 'back' : 'front');
-    });
-
-    window.addEventListener('keydown', (e) => {
-      if (e.code === 'Space') { e.preventDefault(); flipBtn.click(); }
-      if (e.code === 'ArrowLeft') { prevBtn.click(); }
-      if (e.code === 'ArrowRight') { nextBtn.click(); }
-    });
+    flipBtn.addEventListener('click', () => setSide(currentSide === 'front' ? 'back' : 'front'));
 
     newCardBtn.addEventListener('click', () => {
+      if (playing) return;
       cards.push({ front: null, back: null });
       goTo(cards.length - 1);
       setSide('front');
+      renderThumbs();
+    });
+
+    clearBtn.addEventListener('click', () => {
+      if (playing) return;
+      initCanvas();
+      saveCanvasToSide();
       renderThumbs();
     });
 
@@ -410,134 +402,106 @@
       thumbGrid.innerHTML = '';
       cards.forEach((card, i) => {
         const el = document.createElement('div');
-        el.className = 'thumb' + (i === currentIndex ? ' active' : '');
+        el.className = 'thumb' + ((!playing && i === currentIndex) ? ' active' : '');
         const frontImg = document.createElement('img');
         frontImg.src = card.front || placeholderDataURL();
         const meta = document.createElement('div');
         meta.className = 'meta';
-        meta.innerHTML = `
-          <span>#${i+1}</span>
-          <span>${card.front ? 'F✓' : 'F•'} ${card.back ? 'B✓' : 'B•'}</span>
-        `;
+        meta.innerHTML = `<span>#${i+1}</span><span>${card.front ? 'F✓' : 'F•'} ${card.back ? 'B✓' : 'B•'}</span>`;
         el.appendChild(frontImg);
         el.appendChild(meta);
-        el.addEventListener('click', () => { goTo(i); });
+        el.addEventListener('click', () => { if(!playing) goTo(i); });
         thumbGrid.appendChild(el);
       });
     }
 
     function highlightActiveThumb() {
+      if (playing) return;
       [...thumbGrid.querySelectorAll('.thumb')].forEach((t, i) => {
         t.classList.toggle('active', i === currentIndex);
       });
     }
 
     function placeholderDataURL() {
-      // simple tiny placeholder
       const c = document.createElement('canvas');
-      c.width = 320; c.height = 180;
+      c.width = 160; c.height = 90;
       const x = c.getContext('2d');
       x.fillStyle = '#0a0f1c'; x.fillRect(0,0,c.width,c.height);
-      x.strokeStyle = '#334155'; x.strokeRect(8,8,c.width-16,c.height-16);
-      x.fillStyle = '#64748b';
-      x.font = '12px sans-serif';
-      x.fillText('No Front', 12, 20);
-      return c.toDataURL('image/png');
+      return c.toDataURL();
     }
 
-    renderThumbs();
-
-    // ---------- Save / Load ----------
-    saveBtn.addEventListener('click', () => {
-      // persist current canvas state before saving
-      saveCanvasToSide();
-      const payload = {
-        version: 1,
-        createdAt: new Date().toISOString(),
-        canvasSize: { width: canvas.width, height: canvas.height },
-        cards
-      };
-      const blob = new Blob([JSON.stringify(payload)], { type: 'application/json' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = 'flashcards.json';
-      a.click();
-      URL.revokeObjectURL(url);
-    });
-
-    fileInput.addEventListener('change', async (e) => {
-      const file = e.target.files[0];
-      if (!file) return;
-      try {
-        const text = await file.text();
-        const data = JSON.parse(text);
-        if (!data.cards || !Array.isArray(data.cards)) {
-          alert('Invalid JSON: cards array missing.');
-          return;
-        }
-        cards = data.cards.map(c => ({ front: c.front || null, back: c.back || null }));
-        currentIndex = 0;
-        setSide('front');
-        updateUI();
-        renderThumbs();
-        loadSideToCanvas();
-      } catch (err) {
-        alert('Failed to load JSON.');
-      } finally {
-        fileInput.value = '';
-      }
-    });
-
-    // ---------- Play mode ----------
+    // ---------- Play/Randomize Logic ----------
     playBtn.addEventListener('click', () => {
+      if (cards.length === 0) return;
+      saveCanvasToSide();
+      
       playing = true;
-      statusBadge.textContent = 'Play mode';
+      originalIndex = currentIndex;
+      statusBadge.textContent = 'Play mode (Random)';
+      canvasHint.textContent = 'Viewing mode';
       playBtn.style.display = 'none';
       stopBtn.style.display = 'inline-block';
-      // show front side when starting
+      editorControls.style.opacity = '0.3';
+      editorControls.style.pointerEvents = 'none';
+
+      // Fisher-Yates Shuffle
+      shuffledOrder = cards.map((_, i) => i);
+      for (let i = shuffledOrder.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [shuffledOrder[i], shuffledOrder[j]] = [shuffledOrder[j], shuffledOrder[i]];
+      }
+
+      currentIndex = 0;
       setSide('front');
+      updateUI();
     });
 
     stopBtn.addEventListener('click', () => {
       playing = false;
       statusBadge.textContent = 'Edit mode';
+      canvasHint.textContent = 'Draw here';
       stopBtn.style.display = 'none';
       playBtn.style.display = 'inline-block';
+      editorControls.style.opacity = '1';
+      editorControls.style.pointerEvents = 'all';
+
+      currentIndex = originalIndex;
+      setSide('front');
+      updateUI();
+      renderThumbs();
     });
 
-    // Prevent drawing in play mode visually (cursor change optional)
-    canvas.addEventListener('pointerdown', (e) => {
-      if (playing) {
-        // In play mode, just ignore drawing start
-        e.preventDefault();
-      }
-    }, { capture: true });
+    // ---------- Save/Load ----------
+    saveBtn.addEventListener('click', () => {
+      saveCanvasToSide();
+      const payload = { version: 1, cards };
+      const blob = new Blob([JSON.stringify(payload)], { type: 'application/json' });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = 'flashcards.json';
+      a.click();
+    });
 
-    // ---------- Resize handling (keep drawing pixels crisp) ----------
-    function resizeCanvasToDisplaySize() {
-      const dpr = window.devicePixelRatio || 1;
-      const rect = canvas.getBoundingClientRect();
-      const width = Math.round(rect.width * dpr);
-      const height = Math.round(rect.height * dpr);
-      if (canvas.width !== width || canvas.height !== height) {
-        const current = canvas.toDataURL('image/png');
-        canvas.width = width;
-        canvas.height = height;
-        ctx.imageSmoothingEnabled = true;
-        // restore image
-        const img = new Image();
-        img.onload = () => {
-          ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-        };
-        img.src = current;
-      }
-    }
-    new ResizeObserver(resizeCanvasToDisplaySize).observe(canvas);
+    fileInput.addEventListener('change', async (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+      const text = await file.text();
+      const data = JSON.parse(text);
+      cards = data.cards;
+      currentIndex = 0;
+      setSide('front');
+      updateUI();
+      renderThumbs();
+    });
 
-    // ---------- Accessibility hints ----------
-    // Simple focus styles via keyboard can be added if needed.
+    // ---------- Global Keyboard ----------
+    window.addEventListener('keydown', (e) => {
+      if (e.code === 'Space') { e.preventDefault(); flipBtn.click(); }
+      if (e.code === 'ArrowLeft') { prevBtn.click(); }
+      if (e.code === 'ArrowRight') { nextBtn.click(); }
+    });
+
+    renderThumbs();
   </script>
 </body>
 </html>
-
