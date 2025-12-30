@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Infinite Scroll Drawing — LocalStorage, Export/Import</title>
+  <title>Infinite Scroll Drawing — Fixed Quality</title>
   <style>
     :root {
       --bg: #0f172a;
@@ -70,7 +70,7 @@
     canvas {
       display: block;
       width: 100%;
-      height: 800px; /* দৃশ্যমান উচ্চতা */
+      height: auto;
       touch-action: none;
     }
     .hint { font-size: 12px; color: var(--muted); margin-top: 6px; }
@@ -84,14 +84,14 @@
       <button id="exportBtn" class="success">Export JSON</button>
       <label for="importInput" role="button" class="warning">Import JSON</label>
       <input id="importInput" class="file-input" type="file" accept="application/json" />
-      <span class="hint">ব্রাশ রঙ/সাইজ নিচে। স্ক্রল করলেই নতুন সেকশন যুক্ত হবে।</span>
+      <span class="hint">স্ক্রল করলে নতুন সেকশন আসবে। কোয়ালিটি এখন ফিক্সড।</span>
     </div>
     <div class="controls">
       <span class="label">Brush color</span>
       <input type="color" id="colorPicker" value="#ffffff" />
       <span class="label" style="margin-left:8px;">Brush size</span>
-      <input type="range" id="sizePicker" min="1" max="36" value="2" />
-      <span id="sizeLabel" class="label">2 px</span>
+      <input type="range" id="sizePicker" min="1" max="50" value="3" />
+      <span id="sizeLabel" class="label">3 px</span>
       <button id="eraserBtn">Eraser</button>
       <button id="penBtn" class="primary">Pen</button>
       <button id="clearSectionBtn">Clear section</button>
@@ -103,10 +103,10 @@
   </main>
 
   <script>
-    // ---------- Config / State ----------
     const STORAGE_KEY = 'infiniteDrawing_v1';
-    const TILE_HEIGHT = 1600; // অভ্যন্তরীণ পিক্সেল উচ্চতা (উচ্চ DPI স্কেল হবে)
-    const MIN_SECTIONS = 3;   // শুরুতে কমপক্ষে কতটি সেকশন থাকবে
+    const TILE_HEIGHT = 1600;
+    const VIRTUAL_WIDTH = 1920; 
+    const MIN_SECTIONS = 3;
 
     const container = document.getElementById('sectionsContainer');
     const exportBtn = document.getElementById('exportBtn');
@@ -118,41 +118,38 @@
     const penBtn      = document.getElementById('penBtn');
     const clearSectionBtn = document.getElementById('clearSectionBtn');
 
-    let mode = 'pen'; // 'pen' | 'eraser'
-    let sections = []; // [{index, canvas, ctx, dataURL}]
+    let mode = 'pen';
+    let sections = [];
     let drawing = false;
     let activeSection = null;
 
-    // ---------- Helpers ----------
     function createSection(index, dataURL = null) {
       const sec = document.createElement('div');
       sec.className = 'section';
 
       const head = document.createElement('div');
       head.className = 'section-head';
-      head.innerHTML = `<span>Section #${index+1}</span><span>${dataURL ? 'Loaded' : 'Empty'}</span>`;
+      head.innerHTML = `<span>Section #${index+1}</span><span>${dataURL ? 'Loaded' : 'New'}</span>`;
 
       const wrap = document.createElement('div');
       wrap.className = 'canvas-wrap';
 
       const canvas = document.createElement('canvas');
-      const dpr = window.devicePixelRatio || 1;
-      // অভ্যন্তরীণ সাইজ উচ্চ DPI অনুযায়ী
-      canvas.width = Math.floor(container.clientWidth * dpr);
-      canvas.height = Math.floor(TILE_HEIGHT * dpr);
-      canvas.style.height = (canvas.height / dpr) + 'px';
+      canvas.width = VIRTUAL_WIDTH;
+      canvas.height = TILE_HEIGHT;
 
-      const ctx = canvas.getContext('2d');
+      const ctx = canvas.getContext('2d', { alpha: false });
       ctx.imageSmoothingEnabled = true;
+      ctx.imageSmoothingQuality = 'high';
 
-      // ব্যাকগ্রাউন্ড
       ctx.fillStyle = '#0a0f1c';
       ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-      // যদি ডেটা থাকে, রিস্টোর
       if (dataURL) {
         const img = new Image();
-        img.onload = () => { ctx.drawImage(img, 0, 0, canvas.width, canvas.height); };
+        img.onload = () => {
+          ctx.drawImage(img, 0, 0, VIRTUAL_WIDTH, TILE_HEIGHT);
+        };
         img.src = dataURL;
       }
 
@@ -164,7 +161,6 @@
       const sectionObj = { index, canvas, ctx, dataURL: dataURL || null };
       sections[index] = sectionObj;
 
-      // ইভেন্ট
       canvas.addEventListener('pointerdown', (e) => beginStroke(e, sectionObj));
       canvas.addEventListener('pointermove', (e) => continueStroke(e, sectionObj));
       window.addEventListener('pointerup', () => endStroke(sectionObj));
@@ -174,15 +170,14 @@
     }
 
     function getPosInCanvas(e, canvas) {
-  const rect = canvas.getBoundingClientRect();
-  const scaleX = canvas.width / rect.width;
-  const scaleY = canvas.height / rect.height;
-  return {
-    x: (e.clientX - rect.left) * scaleX,
-    y: (e.clientY - rect.top) * scaleY
-  };
-}
-
+      const rect = canvas.getBoundingClientRect();
+      const scaleX = canvas.width / rect.width;
+      const scaleY = canvas.height / rect.height;
+      return {
+        x: (e.clientX - rect.left) * scaleX,
+        y: (e.clientY - rect.top) * scaleY
+      };
+    }
 
     function beginStroke(e, section) {
       activeSection = section;
@@ -192,12 +187,12 @@
 
       if (mode === 'pen') {
         ctx.strokeStyle = colorPicker.value;
-        ctx.lineWidth = parseFloat(sizePicker.value) * (window.devicePixelRatio || 1);
+        ctx.lineWidth = parseFloat(sizePicker.value);
         ctx.globalCompositeOperation = 'source-over';
       } else {
-        ctx.strokeStyle = 'rgba(0,0,0,1)';
-        ctx.lineWidth = parseFloat(sizePicker.value) * (window.devicePixelRatio || 1) * 2;
-        ctx.globalCompositeOperation = 'destination-out';
+        ctx.strokeStyle = '#0a0f1c';
+        ctx.lineWidth = parseFloat(sizePicker.value) * 3;
+        ctx.globalCompositeOperation = 'source-over';
       }
 
       ctx.lineCap = 'round';
@@ -218,22 +213,19 @@
       if (!drawing || activeSection !== section) return;
       drawing = false;
       section.ctx.closePath();
-      // সেভ
-      section.dataURL = section.canvas.toDataURL('image/png');
+      section.dataURL = section.canvas.toDataURL('image/png', 1.0);
       persistToLocalStorage();
     }
 
     function persistToLocalStorage() {
       const payload = {
-        version: 1,
-        tileHeight: TILE_HEIGHT,
-        createdAt: new Date().toISOString(),
+        version: 2,
         sections: sections.map(s => ({ index: s.index, dataURL: s.dataURL }))
       };
       try {
         localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
       } catch (err) {
-        console.warn('LocalStorage save failed', err);
+        console.warn('LocalStorage limit reached');
       }
     }
 
@@ -247,15 +239,10 @@
       }
     }
 
-    // ---------- Infinite scroll ----------
     function ensureMoreSectionsIfNeeded() {
       const scrolledBottom = window.scrollY + window.innerHeight;
       const docHeight = document.documentElement.scrollHeight;
-
-      const gap = docHeight - scrolledBottom;
-      // নিচের দিকে যদি কম জায়গা থাকে, নতুন সেকশন যোগ করো
-      if (gap < 800) {
-        addSection();
+      if (docHeight - scrolledBottom < 1000) {
         addSection();
       }
     }
@@ -267,23 +254,21 @@
 
     window.addEventListener('scroll', ensureMoreSectionsIfNeeded);
 
-    // ---------- Export / Import ----------
     exportBtn.addEventListener('click', () => {
-      // আপ-টু-ডেট ডেটাURL নিশ্চিত করো
       sections.forEach(s => {
-        s.dataURL = s.canvas.toDataURL('image/png');
+        s.dataURL = s.canvas.toDataURL('image/png', 1.0);
       });
       const payload = {
-        version: 1,
+        version: 2,
+        virtualWidth: VIRTUAL_WIDTH,
         tileHeight: TILE_HEIGHT,
-        createdAt: new Date().toISOString(),
         sections: sections.map(s => ({ index: s.index, dataURL: s.dataURL }))
       };
       const blob = new Blob([JSON.stringify(payload)], { type: 'application/json' });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = 'infinite-drawing.json';
+      a.download = 'drawing-high-res.json';
       a.click();
       URL.revokeObjectURL(url);
     });
@@ -294,29 +279,22 @@
       try {
         const text = await file.text();
         const data = JSON.parse(text);
-        if (!data.sections || !Array.isArray(data.sections)) {
-          alert('Invalid JSON: sections array missing.');
-          return;
-        }
-        // পুরনো সেকশন মুছো
+        if (!data.sections) return;
         sections = [];
         container.innerHTML = '';
-        // নতুন সেকশন লোড করো
         data.sections.forEach((item, i) => {
           createSection(i, item.dataURL || null);
         });
-        // কমপক্ষে একটি বাড়তি সেকশন যোগ করো যাতে স্ক্রল করা যায়
         addSection();
         persistToLocalStorage();
         window.scrollTo({ top: 0, behavior: 'smooth' });
       } catch (err) {
-        alert('Failed to import JSON.');
+        alert('Error loading file');
       } finally {
         importInput.value = '';
       }
     });
 
-    // ---------- Controls ----------
     sizePicker.addEventListener('input', () => {
       sizeLabel.textContent = sizePicker.value + ' px';
     });
@@ -333,54 +311,30 @@
     clearSectionBtn.addEventListener('click', () => {
       const sec = findVisibleSection();
       if (!sec) return;
-      const { ctx, canvas } = sec;
-      ctx.globalCompositeOperation = 'source-over';
-      ctx.fillStyle = '#0a0f1c';
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
-      sec.dataURL = canvas.toDataURL('image/png');
+      sec.ctx.fillStyle = '#0a0f1c';
+      sec.ctx.fillRect(0, 0, sec.canvas.width, sec.canvas.height);
+      sec.dataURL = sec.canvas.toDataURL('image/png');
       persistToLocalStorage();
     });
 
     function findVisibleSection() {
-      // viewport-এর কেন্দ্রের সাথে যে সেকশন মিলে তাকে বেছে নাও
       const centerY = window.scrollY + window.innerHeight / 2;
       let best = null, bestDist = Infinity;
       sections.forEach(s => {
         const rect = s.canvas.getBoundingClientRect();
         const top = rect.top + window.scrollY;
-        const bottom = top + rect.height;
-        const mid = (top + bottom) / 2;
+        const mid = top + rect.height / 2;
         const dist = Math.abs(mid - centerY);
         if (dist < bestDist) { bestDist = dist; best = s; }
       });
       return best;
     }
 
-    // ---------- Resize handling ----------
-    function resizeAllCanvases() {
-      const dpr = window.devicePixelRatio || 1;
-      sections.forEach(s => {
-        const oldData = s.canvas.toDataURL('image/png');
-        s.canvas.width = Math.floor(container.clientWidth * dpr);
-        s.canvas.height = Math.floor(TILE_HEIGHT * dpr);
-        s.canvas.style.height = (s.canvas.height / dpr) + 'px';
-        s.ctx.imageSmoothingEnabled = true;
-        const img = new Image();
-        img.onload = () => { s.ctx.drawImage(img, 0, 0, s.canvas.width, s.canvas.height); };
-        img.src = oldData;
-      });
-    }
-    window.addEventListener('resize', () => {
-      // থ্রটল না করেও ছোট প্রোজেক্টে চলবে
-      resizeAllCanvases();
-    });
-
-    // ---------- Init ----------
     (function init() {
       const data = loadFromLocalStorage();
-      if (data && Array.isArray(data.sections) && data.sections.length > 0) {
+      if (data && data.sections && data.sections.length > 0) {
         data.sections.forEach((item, i) => createSection(i, item.dataURL || null));
-        addSection(); // স্ক্রল করার জন্য অতিরিক্ত
+        addSection();
       } else {
         for (let i = 0; i < MIN_SECTIONS; i++) addSection();
       }
