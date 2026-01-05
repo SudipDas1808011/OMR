@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Infinite Scroll Drawing — PDF Export</title>
+  <title>Infinite Scroll Drawing — Section Navigation</title>
   <!-- jsPDF Library for PDF Generation -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <style>
@@ -32,9 +32,9 @@
     }
     .title { font-weight: 700; font-size: 18px; }
     .toolbar {
-      display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px;
+      display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-top: 8px;
     }
-    button, label[role="button"] {
+    button, label[role="button"], input[type="number"] {
       background: #0b253f;
       color: var(--text);
       border: 1px solid #1e3a8a;
@@ -43,12 +43,24 @@
       cursor: pointer; font-weight: 600;
       transition: all 0.2s;
     }
+    input[type="number"] {
+      width: 80px;
+      cursor: text;
+      outline: none;
+    }
+    input[type="number"]:focus {
+      border-color: var(--primary);
+    }
     button:disabled { opacity: 0.5; cursor: not-allowed; }
     button.primary { background: #0a2a52; border-color: #2563eb; }
     button.success { background: #06351f; border-color: #16a34a; }
     button.warning { background: #3a2708; border-color: #f59e0b; }
     button.pdf-btn { background: #4338ca; border-color: #6366f1; }
     
+    .nav-group {
+      display: flex; gap: 4px; align-items: center; background: rgba(30, 58, 138, 0.2); padding: 4px; border-radius: 10px; border: 1px solid #1e3a8a;
+    }
+
     .controls {
       display: flex; gap: 10px; align-items: center; flex-wrap: wrap;
       margin-top: 10px;
@@ -62,6 +74,7 @@
       background: var(--panel);
       border: 1px solid var(--border);
       border-radius: 12px; overflow: hidden;
+      scroll-margin-top: 180px; /* Adjust for sticky header */
     }
     .section-head {
       display: flex; justify-content: space-between; align-items: center;
@@ -87,11 +100,15 @@
   <header>
     <div class="title">Infinite Scroll Drawing</div>
     <div class="toolbar">
+      <div class="nav-group">
+        <input type="number" id="jumpInput" placeholder="#" min="1" />
+        <button id="jumpBtn">Go</button>
+      </div>
       <button id="pdfBtn" class="pdf-btn">Download PDF</button>
       <button id="exportBtn" class="success">Export JSON</button>
       <label for="importInput" role="button" class="warning">Import JSON</label>
       <input id="importInput" class="file-input" type="file" accept="application/json" />
-      <span class="hint">স্ক্রল করলে নতুন সেকশন আসবে। PDF এখন ডাউনলোড করা যাবে।</span>
+      <span class="hint" id="sectionCountLabel">Total: 3 sections</span>
     </div>
     <div class="controls">
       <span class="label">Brush color</span>
@@ -125,15 +142,24 @@
     const eraserBtn   = document.getElementById('eraserBtn');
     const penBtn      = document.getElementById('penBtn');
     const clearSectionBtn = document.getElementById('clearSectionBtn');
+    const jumpInput = document.getElementById('jumpInput');
+    const jumpBtn = document.getElementById('jumpBtn');
+    const sectionCountLabel = document.getElementById('sectionCountLabel');
 
     let mode = 'pen';
     let sections = [];
     let drawing = false;
     let activeSection = null;
 
+    function updateSectionUI() {
+      sectionCountLabel.textContent = `Total: ${sections.length} sections`;
+      jumpInput.max = sections.length;
+    }
+
     function createSection(index, dataURL = null) {
       const sec = document.createElement('div');
       sec.className = 'section';
+      sec.id = `section-${index}`;
 
       const head = document.createElement('div');
       head.className = 'section-head';
@@ -166,7 +192,7 @@
       sec.appendChild(wrap);
       container.appendChild(sec);
 
-      const sectionObj = { index, canvas, ctx, dataURL: dataURL || null };
+      const sectionObj = { index, canvas, ctx, element: sec, dataURL: dataURL || null };
       sections[index] = sectionObj;
 
       canvas.addEventListener('pointerdown', (e) => beginStroke(e, sectionObj));
@@ -174,8 +200,25 @@
       window.addEventListener('pointerup', () => endStroke(sectionObj));
       canvas.addEventListener('pointerleave', () => endStroke(sectionObj));
 
+      updateSectionUI();
       return sectionObj;
     }
+
+    // Section Jump System
+    jumpBtn.addEventListener('click', () => {
+      const val = parseInt(jumpInput.value);
+      if (val >= 1 && val <= sections.length) {
+        const target = sections[val - 1].element;
+        target.scrollIntoView({ behavior: 'smooth' });
+      } else {
+        alert(`Please enter a number between 1 and ${sections.length}`);
+      }
+    });
+
+    // Support for Enter key in jump input
+    jumpInput.addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') jumpBtn.click();
+    });
 
     function getPosInCanvas(e, canvas) {
       const rect = canvas.getBoundingClientRect();
@@ -289,7 +332,6 @@
       pdfBtn.textContent = 'Generating...';
       pdfBtn.disabled = true;
 
-      // Create PDF with custom size to match canvas resolution
       const pdf = new jsPDF({
         orientation: 'p',
         unit: 'px',
@@ -299,21 +341,17 @@
       try {
         for (let i = 0; i < sections.length; i++) {
           const s = sections[i];
-          // Get high quality image data
           const imgData = s.canvas.toDataURL('image/png', 1.0);
           
           if (i > 0) {
             pdf.addPage([VIRTUAL_WIDTH, TILE_HEIGHT], 'p');
           }
-          
-          // Add drawing to PDF
           pdf.addImage(imgData, 'PNG', 0, 0, VIRTUAL_WIDTH, TILE_HEIGHT);
         }
-
         pdf.save('my-drawing-collection.pdf');
       } catch (err) {
         console.error(err);
-        alert('PDF তৈরি করতে সমস্যা হয়েছে।');
+        alert('PDF toiri korte somossa hoyeche.');
       } finally {
         pdfBtn.textContent = 'Download PDF';
         pdfBtn.disabled = false;
