@@ -2,8 +2,8 @@
 <html lang="bn">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Infinite Scroll Drawing — Section Navigation</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Infinite Scroll Drawing — Scaled PDF Fix</title>
   <!-- jsPDF Library for PDF Generation -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <style>
@@ -74,7 +74,7 @@
       background: var(--panel);
       border: 1px solid var(--border);
       border-radius: 12px; overflow: hidden;
-      scroll-margin-top: 180px; /* Adjust for sticky header */
+      scroll-margin-top: 180px;
     }
     .section-head {
       display: flex; justify-content: space-between; align-items: center;
@@ -204,7 +204,6 @@
       return sectionObj;
     }
 
-    // Section Jump System
     jumpBtn.addEventListener('click', () => {
       const val = parseInt(jumpInput.value);
       if (val >= 1 && val <= sections.length) {
@@ -215,7 +214,6 @@
       }
     });
 
-    // Support for Enter key in jump input
     jumpInput.addEventListener('keypress', (e) => {
       if (e.key === 'Enter') jumpBtn.click();
     });
@@ -305,7 +303,48 @@
 
     window.addEventListener('scroll', ensureMoreSectionsIfNeeded);
 
-    // JSON Export
+    // PDF Export with High Precision and Scaling to fit Width
+    pdfBtn.addEventListener('click', async () => {
+      const { jsPDF } = window.jspdf;
+      
+      pdfBtn.textContent = 'Processing PDF...';
+      pdfBtn.disabled = true;
+
+      try {
+        // Standard A4 width in points is approx 595.
+        // We will scale our 1920px canvas to fit exactly within this width.
+        const pdf = new jsPDF('p', 'pt', 'a4');
+        const pageWidth = pdf.internal.pageSize.getWidth();
+        const pageHeight = pdf.internal.pageSize.getHeight();
+        
+        // Calculate scaling factor to fit the virtual width to the page width
+        const ratio = pageWidth / VIRTUAL_WIDTH;
+        // The resulting height of the scaled image on the PDF page
+        const scaledImgHeight = TILE_HEIGHT * ratio;
+
+        for (let i = 0; i < sections.length; i++) {
+          const s = sections[i];
+          const imgData = s.canvas.toDataURL('image/png', 1.0);
+          
+          if (i > 0) {
+            pdf.addPage('a4', 'p');
+          }
+          
+          // Image drawing with calculated scaling to ensure full width is visible
+          // Coordinates (0,0) and dimensions (pageWidth, scaledImgHeight)
+          pdf.addImage(imgData, 'PNG', 0, 0, pageWidth, scaledImgHeight, `sec_${i}`, 'FAST');
+        }
+        
+        pdf.save('infinite_drawing_fit_width.pdf');
+      } catch (err) {
+        console.error("PDF Export Error:", err);
+        alert('PDF download failed. Error: ' + err.message);
+      } finally {
+        pdfBtn.textContent = 'Download PDF';
+        pdfBtn.disabled = false;
+      }
+    });
+
     exportBtn.addEventListener('click', () => {
       sections.forEach(s => {
         s.dataURL = s.canvas.toDataURL('image/png', 1.0);
@@ -320,42 +359,9 @@
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = 'drawing-high-res.json';
+      a.download = 'drawing-backup.json';
       a.click();
       URL.revokeObjectURL(url);
-    });
-
-    // PDF Export Feature
-    pdfBtn.addEventListener('click', async () => {
-      const { jsPDF } = window.jspdf;
-      
-      pdfBtn.textContent = 'Generating...';
-      pdfBtn.disabled = true;
-
-      const pdf = new jsPDF({
-        orientation: 'p',
-        unit: 'px',
-        format: [VIRTUAL_WIDTH, TILE_HEIGHT]
-      });
-
-      try {
-        for (let i = 0; i < sections.length; i++) {
-          const s = sections[i];
-          const imgData = s.canvas.toDataURL('image/png', 1.0);
-          
-          if (i > 0) {
-            pdf.addPage([VIRTUAL_WIDTH, TILE_HEIGHT], 'p');
-          }
-          pdf.addImage(imgData, 'PNG', 0, 0, VIRTUAL_WIDTH, TILE_HEIGHT);
-        }
-        pdf.save('my-drawing-collection.pdf');
-      } catch (err) {
-        console.error(err);
-        alert('PDF toiri korte somossa hoyeche.');
-      } finally {
-        pdfBtn.textContent = 'Download PDF';
-        pdfBtn.disabled = false;
-      }
     });
 
     importInput.addEventListener('change', async (e) => {
