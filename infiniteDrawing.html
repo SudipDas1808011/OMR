@@ -3,7 +3,9 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Infinite Scroll Drawing — Fixed Quality</title>
+  <title>Infinite Scroll Drawing — PDF Export</title>
+  <!-- jsPDF Library for PDF Generation -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <style>
     :root {
       --bg: #0f172a;
@@ -39,10 +41,14 @@
       border-radius: 8px;
       padding: 8px 12px;
       cursor: pointer; font-weight: 600;
+      transition: all 0.2s;
     }
+    button:disabled { opacity: 0.5; cursor: not-allowed; }
     button.primary { background: #0a2a52; border-color: #2563eb; }
     button.success { background: #06351f; border-color: #16a34a; }
     button.warning { background: #3a2708; border-color: #f59e0b; }
+    button.pdf-btn { background: #4338ca; border-color: #6366f1; }
+    
     .controls {
       display: flex; gap: 10px; align-items: center; flex-wrap: wrap;
       margin-top: 10px;
@@ -81,10 +87,11 @@
   <header>
     <div class="title">Infinite Scroll Drawing</div>
     <div class="toolbar">
+      <button id="pdfBtn" class="pdf-btn">Download PDF</button>
       <button id="exportBtn" class="success">Export JSON</button>
       <label for="importInput" role="button" class="warning">Import JSON</label>
       <input id="importInput" class="file-input" type="file" accept="application/json" />
-      <span class="hint">স্ক্রল করলে নতুন সেকশন আসবে। কোয়ালিটি এখন ফিক্সড।</span>
+      <span class="hint">স্ক্রল করলে নতুন সেকশন আসবে। PDF এখন ডাউনলোড করা যাবে।</span>
     </div>
     <div class="controls">
       <span class="label">Brush color</span>
@@ -110,6 +117,7 @@
 
     const container = document.getElementById('sectionsContainer');
     const exportBtn = document.getElementById('exportBtn');
+    const pdfBtn = document.getElementById('pdfBtn');
     const importInput = document.getElementById('importInput');
     const colorPicker = document.getElementById('colorPicker');
     const sizePicker  = document.getElementById('sizePicker');
@@ -254,6 +262,7 @@
 
     window.addEventListener('scroll', ensureMoreSectionsIfNeeded);
 
+    // JSON Export
     exportBtn.addEventListener('click', () => {
       sections.forEach(s => {
         s.dataURL = s.canvas.toDataURL('image/png', 1.0);
@@ -271,6 +280,44 @@
       a.download = 'drawing-high-res.json';
       a.click();
       URL.revokeObjectURL(url);
+    });
+
+    // PDF Export Feature
+    pdfBtn.addEventListener('click', async () => {
+      const { jsPDF } = window.jspdf;
+      
+      pdfBtn.textContent = 'Generating...';
+      pdfBtn.disabled = true;
+
+      // Create PDF with custom size to match canvas resolution
+      const pdf = new jsPDF({
+        orientation: 'p',
+        unit: 'px',
+        format: [VIRTUAL_WIDTH, TILE_HEIGHT]
+      });
+
+      try {
+        for (let i = 0; i < sections.length; i++) {
+          const s = sections[i];
+          // Get high quality image data
+          const imgData = s.canvas.toDataURL('image/png', 1.0);
+          
+          if (i > 0) {
+            pdf.addPage([VIRTUAL_WIDTH, TILE_HEIGHT], 'p');
+          }
+          
+          // Add drawing to PDF
+          pdf.addImage(imgData, 'PNG', 0, 0, VIRTUAL_WIDTH, TILE_HEIGHT);
+        }
+
+        pdf.save('my-drawing-collection.pdf');
+      } catch (err) {
+        console.error(err);
+        alert('PDF তৈরি করতে সমস্যা হয়েছে।');
+      } finally {
+        pdfBtn.textContent = 'Download PDF';
+        pdfBtn.disabled = false;
+      }
     });
 
     importInput.addEventListener('change', async (e) => {
