@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <link rel="icon" type="image/png" href="https://upload.wikimedia.org/wikipedia/commons/b/b6/Home_icon_red-1.png">
+  <meta charset="UTF-8">
+  <title>Make Life Easy</title>
+  <style>
+    body {
+      margin: 0;
+      font-family: 'Segoe UI', sans-serif;
+      background: linear-gradient(135deg, #1f1c2c, #928dab);
+      color: #fff;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-height: 100vh;
+    }
+
+    h1 {
+      margin: 20px;
+      font-size: 2.5rem;
+      text-shadow: 2px 2px 5px rgba(0,0,0,0.5);
+    }
+
+    .card-container {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+      gap: 20px;
+      width: 90%;
+      max-width: 1200px;
+      margin-bottom: 50px;
+    }
+
+    .card {
+      background: rgba(255,255,255,0.1);
+      border-radius: 15px;
+      padding: 20px;
+      text-align: center;
+      cursor: pointer;
+      transition: transform 0.3s, box-shadow 0.3s;
+      backdrop-filter: blur(10px);
+    }
+
+    .card:hover {
+      transform: translateY(-10px);
+      box-shadow: 0 10px 20px rgba(0,0,0,0.5);
+    }
+
+    .card h2 {
+      font-size: 1.2rem;
+      margin-bottom: 10px;
+      color: #ffebcd;
+    }
+
+    .controls {
+      display: flex;
+      gap: 15px;
+      margin-bottom: 20px;
+    }
+
+    .btn {
+      padding: 10px 15px;
+      border: none;
+      border-radius: 5px;
+      background: #ff6b6b;
+      color: #fff;
+      cursor: pointer;
+      transition: background 0.3s;
+    }
+
+    .btn:hover {
+      background: #ff4757;
+    }
+
+    .add-card {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      background: rgba(255,255,255,0.2);
+      border-radius: 50%;
+      width: 60px;
+      height: 60px;
+      font-size: 2rem;
+      cursor: pointer;
+      transition: background 0.3s;
+    }
+
+    .add-card:hover {
+      background: rgba(255,255,255,0.4);
+    }
+
+    /* Modal */
+    .modal {
+      display: none;
+      position: fixed;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      background: rgba(0,0,0,0.7);
+      justify-content: center;
+      align-items: center;
+    }
+
+    .modal-content {
+      background: #2c2c54;
+      padding: 20px;
+      border-radius: 10px;
+      text-align: center;
+      width: 300px;
+    }
+
+    .modal-content input {
+      width: 90%;
+      padding: 10px;
+      margin: 10px 0;
+      border-radius: 5px;
+      border: none;
+    }
+
+    .modal-content button {
+      padding: 10px 20px;
+      border: none;
+      border-radius: 5px;
+      background: #ff6b6b;
+      color: #fff;
+      cursor: pointer;
+      transition: background 0.3s;
+    }
+
+    .modal-content button:hover {
+      background: #ff4757;
+    }
+  </style>
+</head>
+<body>
+  <h1>🌐 Make Life Easy </h1>
+
+  <div class="controls">
+    <div class="add-card" id="addCard">+</div>
+    <button class="btn" id="exportBtn">Export</button>
+    <input type="file" id="importFile" style="display:none" />
+    <button class="btn" id="importBtn">Import</button>
+  </div>
+
+  <div class="card-container" id="cardContainer"></div>
+
+  <!-- Modal -->
+  <div class="modal" id="modal">
+    <div class="modal-content">
+      <h2>Add New Card</h2>
+      <input type="text" id="cardTitle" placeholder="Enter Title">
+      <input type="text" id="cardURL" placeholder="Enter URL">
+      <button id="saveCard">Save</button>
+    </div>
+  </div>
+
+  <script>
+    const cardContainer = document.getElementById('cardContainer');
+    const addCardBtn = document.getElementById('addCard');
+    const modal = document.getElementById('modal');
+    const saveCardBtn = document.getElementById('saveCard');
+    const cardTitleInput = document.getElementById('cardTitle');
+    const cardURLInput = document.getElementById('cardURL');
+    const exportBtn = document.getElementById('exportBtn');
+    const importBtn = document.getElementById('importBtn');
+    const importFile = document.getElementById('importFile');
+
+    // Load saved cards
+    let cards = JSON.parse(localStorage.getItem('cards')) || [];
+
+    function renderCards() {
+      // Sort alphabetically by title
+      cards.sort((a, b) => a.title.localeCompare(b.title));
+      cardContainer.innerHTML = '';
+      cards.forEach((card) => {
+        const cardDiv = document.createElement('div');
+        cardDiv.className = 'card';
+        cardDiv.innerHTML = `<h2>${card.title}</h2>`;
+        cardDiv.onclick = () => window.open(card.url, '_blank');
+        cardContainer.appendChild(cardDiv);
+      });
+    }
+
+    renderCards();
+
+    addCardBtn.onclick = () => {
+      modal.style.display = 'flex';
+    };
+
+    saveCardBtn.onclick = () => {
+      const title = cardTitleInput.value.trim();
+      const url = cardURLInput.value.trim();
+      if(title && url) {
+        cards.push({title, url});
+        localStorage.setItem('cards', JSON.stringify(cards));
+        renderCards();
+        cardTitleInput.value = '';
+        cardURLInput.value = '';
+        modal.style.display = 'none';
+      }
+    };
+
+    window.onclick = (e) => {
+      if(e.target === modal) {
+        modal.style.display = 'none';
+      }
+    };
+
+    // Export cards
+    exportBtn.onclick = () => {
+      const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(cards));
+      const dlAnchor = document.createElement('a');
+      dlAnchor.setAttribute("href", dataStr);
+      dlAnchor.setAttribute("download", "cards.json");
+      dlAnchor.click();
+    };
+
+    // Import cards
+    importBtn.onclick = () => {
+      importFile.click();
+    };
+
+    importFile.onchange = (e) => {
+      const file = e.target.files[0];
+      if(file) {
+        const reader = new FileReader();
+        reader.onload = (event) => {
+          try {
+            const importedCards = JSON.parse(event.target.result);
+            if(Array.isArray(importedCards)) {
+              cards = importedCards;
+              localStorage.setItem('cards', JSON.stringify(cards));
+              renderCards();
+            }
+          } catch(err) {
+            alert("Invalid file format!");
+          }
+        };
+        reader.readAsText(file);
+      }
+    };
+  </script>
+</body>
+</html>
