@@ -1,0 +1,321 @@
+<!doctype html>
+<html lang="bn">
+
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Wikipedia Reader (Bangla-friendly)</title>
+  <!-- Google Fonts: Noto Sans Bengali -->
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Bengali:wght@400;500;700&display=swap"
+    rel="stylesheet">
+  <style>
+    :root {
+      --maxw: 75ch;
+      --font-size: 18px;
+      --line-height: 1.85;
+
+      --bg: #0b1220;
+      --text: #e5e7eb;
+      --muted: #9aa4b2;
+      --link: #38bdf8;
+      --accent: #111827;
+    }
+
+    [data-theme="dark"] {
+      --bg: #0b1220;
+      --text: #e5e7eb;
+      --muted: #9aa4b2;
+      --link: #38bdf8;
+      --accent: #111827;
+    }
+
+    [data-theme="sepia"] {
+      --bg: #f4ecd8;
+      --text: #3b2f1d;
+      --muted: #6b5f4a;
+      --link: #8a5a44;
+      --accent: #e9ddc7;
+    }
+
+    html,
+    body {
+      height: 100%;
+      background: var(--bg);
+      color: var(--text);
+      margin: 0;
+      font-family: "Noto Sans Bengali", system-ui, -apple-system, "Segoe UI",
+        Roboto, "Noto Sans", "SolaimanLipi", "Noto Serif Bengali", sans-serif;
+      font-size: var(--font-size);
+      line-height: var(--line-height);
+      text-rendering: optimizeLegibility;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    .app {
+      display: grid;
+      grid-template-rows: auto 1fr;
+      height: 100%;
+    }
+
+    .toolbar {
+      display: flex;
+      gap: 12px;
+      align-items: center;
+      padding: 12px 16px;
+      border-bottom: 1px solid var(--accent);
+      background: color-mix(in srgb, var(--bg) 70%, white 30%);
+    }
+
+    .toolbar input[type="url"] {
+      flex: 1;
+      padding: 10px 12px;
+      border: 1px solid var(--accent);
+      border-radius: 10px;
+      background: var(--bg);
+      color: var(--text);
+      outline: none;
+    }
+
+    .toolbar button,
+    .toolbar select {
+      padding: 10px 12px;
+      border-radius: 10px;
+      border: 1px solid var(--accent);
+      background: var(--bg);
+      color: var(--text);
+      cursor: pointer;
+    }
+
+    .content {
+      overflow: auto;
+      padding: 24px;
+    }
+
+    .article {
+      max-width: var(--maxw);
+      margin: 0 auto;
+    }
+
+    .article h1,
+    .article h2,
+    .article h3,
+    .article h4 {
+      line-height: 1.35;
+      margin: 1.1em 0 0.6em;
+    }
+
+    .article h1 {
+      font-size: 1.6em;
+    }
+
+    .article h2 {
+      font-size: 1.35em;
+    }
+
+    .article h3 {
+      font-size: 1.2em;
+    }
+
+    .article p {
+      margin: 0.9em 0;
+    }
+
+    .article a {
+      color: var(--link);
+      text-decoration: none;
+      border-bottom: 1px dotted color-mix(in srgb, var(--link) 50%, transparent 50%);
+    }
+
+    .article a:hover {
+      text-decoration: underline;
+    }
+
+    .article img,
+    .article figure,
+    .article table {
+      max-width: 100%;
+      height: auto;
+    }
+
+    .note {
+      font-size: 0.92em;
+      color: var(--muted);
+      border-left: 3px solid var(--accent);
+      padding-left: 10px;
+      margin: 16px 0;
+    }
+
+    .error {
+      color: #b91c1c;
+      background: #fee2e2;
+      border: 1px solid #fecaca;
+      padding: 12px;
+      border-radius: 8px;
+      margin-top: 12px;
+    }
+
+    .highlight {
+      background-color: yellow;
+      color: #140202;
+    }
+
+    .hidden {
+      display: none;
+    }
+  </style>
+</head>
+
+<body data-theme="">
+  <div class="app">
+    <div class="toolbar">
+      <input id="urlInput" type="url" placeholder="উদাহরণ: https://bn.wikipedia.org/wiki/রবীন্দ্রনাথ_ঠাকুর" />
+      <button id="loadBtn">Load</button>
+      <select id="theme">
+        <option value="dark">Dark</option>
+        <option value="sepia">Sepia</option>
+      </select>
+      <select id="fontSize">
+        <option value="16">Font 16</option>
+        <option value="18" selected>Font 18</option>
+        <option value="20">Font 20</option>
+        <option value="22">Font 22</option>
+      </select>
+      <select id="lineHeight">
+        <option value="1.7">LH 1.7</option>
+        <option value="1.85" selected>LH 1.85</option>
+        <option value="2.0">LH 2.0</option>
+      </select>
+    </div>
+    <div class="content">
+      <div class="article" id="article">
+        <div class="note">
+          Wikipedia URL পেস্ট করে Load চাপুন। বাংলা ফন্ট ও রিডার-ফ্রেন্ডলি থিমে আর্টিকেল দেখাবে।
+        </div>
+      </div>
+      <div id="error" class="error hidden"></div>
+    </div>
+  </div>
+
+  <script>
+    const urlInput = document.getElementById('urlInput');
+    const loadBtn = document.getElementById('loadBtn');
+    const articleEl = document.getElementById('article');
+    const errorEl = document.getElementById('error');
+    const themeSel = document.getElementById('theme');
+    const fontSel = document.getElementById('fontSize');
+    const lhSel = document.getElementById('lineHeight');
+
+    // Theme, font size, line-height controls
+    themeSel.addEventListener('change', () => {
+      document.body.setAttribute('data-theme', themeSel.value);
+    });
+    fontSel.addEventListener('change', () => {
+      document.documentElement.style.setProperty('--font-size', fontSel.value + 'px');
+    });
+    lhSel.addEventListener('change', () => {
+      document.documentElement.style.setProperty('--line-height', lhSel.value);
+    });
+
+    loadBtn.addEventListener('click', () => {
+      const raw = urlInput.value.trim();
+      if (!raw) return;
+      try {
+        const { host, title } = parseWikiURL(raw);
+        fetchMobileHTML(host, title);
+      } catch (e) {
+        showError('দয়া করে একটি সঠিক Wikipedia URL দিন। উদাহরণ: https://bn.wikipedia.org/wiki/রবীন্দ্রনাথ_ঠাকুর');
+      }
+    });
+
+    function parseWikiURL(u) {
+      const url = new URL(u);
+      if (!url.host.includes('wikipedia.org')) {
+        throw new Error('not wikipedia');
+      }
+      // Expected path: /wiki/Title
+      let title = decodeURIComponent(url.pathname.replace(/^\/+/, ''));
+      if (title.startsWith('wiki/')) title = title.slice(5);
+      if (!title) throw new Error('no title');
+      return { host: url.host, title };
+    }
+
+    async function fetchMobileHTML(host, title) {
+      clearError();
+      articleEl.innerHTML = '<div class="note">লোড হচ্ছে…</div>';
+      const endpoint = `https://${host}/api/rest_v1/page/mobile-html/${encodeURIComponent(title)}`;
+      try {
+        const res = await fetch(endpoint, {
+          headers: { 'Accept': 'text/html' }
+        });
+        if (!res.ok) throw new Error('HTTP ' + res.status);
+        const html = await res.text();
+        // Sanitize basic: remove unwanted scripts/style from incoming (mobile-html is already sanitized)
+        const doc = new DOMParser().parseFromString(html, 'text/html');
+        // Remove banners or edit bars if present
+        doc.querySelectorAll('.header-container, .ambox, .hatnote').forEach(el => el.remove());
+        const body = doc.body;
+        // Inject content
+        articleEl.innerHTML = '';
+        // Title if available
+        const h = body.querySelector('section > h1') || body.querySelector('h1');
+        if (h) {
+          const h1 = document.createElement('h1');
+          h1.textContent = h.textContent;
+          articleEl.appendChild(h1);
+        }
+        // Append sections
+        body.querySelectorAll('section, p, figure, ul, ol, table, h2, h3, h4').forEach(el => {
+          articleEl.appendChild(el);
+        });
+        // Handle internal links to keep reader view
+        articleEl.querySelectorAll('a').forEach(a => {
+          const href = a.getAttribute('href') || '';
+          if (href.startsWith('/wiki/')) {
+            a.addEventListener('click', (e) => {
+              e.preventDefault();
+              const title = decodeURIComponent(href.replace('/wiki/', ''));
+              fetchMobileHTML(host, title);
+            });
+          } else if (href.startsWith('//') || href.startsWith('http')) {
+            a.setAttribute('target', '_blank');
+            a.setAttribute('rel', 'noopener noreferrer');
+          }
+        });
+      } catch (err) {
+        showError('লোড করা যায়নি। পরে আবার চেষ্টা করুন।');
+        console.error(err);
+      }
+    }
+
+    function showError(msg) {
+      errorEl.textContent = msg;
+      errorEl.classList.remove('hidden');
+    }
+    function clearError() {
+      errorEl.textContent = '';
+      errorEl.classList.add('hidden');
+    }
+
+    document.addEventListener('mouseup', () => {
+      const selection = window.getSelection();
+      if (!selection.rangeCount) return;
+      const range = selection.getRangeAt(0);
+      if (range.toString().length === 0) return;
+      const span = document.createElement('span');
+      span.className = 'highlight';
+      range.surroundContents(span);
+      selection.removeAllRanges();
+      span.addEventListener('contextmenu', (e) => {
+        e.preventDefault();
+        const parent = span.parentNode;
+        while (span.firstChild) {
+          parent.insertBefore(span.firstChild, span);
+        }
+        parent.removeChild(span);
+      });
+    });
+
+  </script>
+</body>
+
+</html>
