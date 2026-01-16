@@ -1,228 +1,462 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Responsive Drawing App</title>
-  <link rel="icon" type="image/png" href="assets/drawing.png">
-
+    <title>Pro Draw | Modern Canvas</title>
+    <link rel="icon" type="image/png" href="assets/drawing.png">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600&display=swap" rel="stylesheet">
     <style>
+        :root {
+            --primary-bg: #f8f9fa;
+            --canvas-bg: #ffffff;
+            --text-color: #212529;
+            --control-bg: rgba(255, 255, 255, 0.8);
+            --accent-color: #4dabf7;
+            --border-color: #dee2e6;
+            --shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+        }
+
+        [data-theme="dark"] {
+            --primary-bg: #121212;
+            --canvas-bg: #1e1e1e;
+            --text-color: #e9ecef;
+            --control-bg: rgba(30, 30, 30, 0.8);
+            --accent-color: #74c0fc;
+            --border-color: #495057;
+            --shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+        }
+
         body {
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            height: 100vh;
+            min-height: 100vh;
             margin: 0;
-            background-color: #f0f0f0;
-            touch-action: none; /* Prevent default touch behaviors */
+            background-color: var(--primary-bg);
+            color: var(--text-color);
+            font-family: 'Outfit', sans-serif;
+            transition: background-color 0.3s ease, color 0.3s ease;
+            touch-action: none;
+            overflow: hidden;
         }
-        canvas {
-            border: 1px solid #000;
-            background-color: #fff;
-            cursor: default;
-            touch-action: none; /* Disable browser touch actions */
+
+        .app-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            width: 100%;
+            height: 100%;
+            padding: 5px;
+            box-sizing: border-box;
         }
+
+        header {
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        h1 {
+            margin: 0;
+            font-weight: 600;
+            letter-spacing: -1px;
+            background: linear-gradient(45deg, var(--accent-color), #bc78ec);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
         .controls {
-            margin-bottom: 10px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            padding: 15px 25px;
+            background: var(--control-bg);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            box-shadow: var(--shadow);
+            border: 1px solid var(--border-color);
+            margin-bottom: 20px;
+            z-index: 10;
+            align-items: center;
+            justify-content: center;
         }
+
+        .control-group {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .control-group label {
+            font-size: 14px;
+            font-weight: 500;
+            opacity: 0.8;
+        }
+
         button {
-            margin: 0 5px;
-            padding: 10px;
-            font-size: 16px;
+            padding: 8px 16px;
+            border-radius: 12px;
+            border: 1px solid var(--border-color);
+            background: var(--canvas-bg);
+            color: var(--text-color);
+            font-family: inherit;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
         }
-        #penBlack:active{
-            background-color: black;
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            background: var(--accent-color);
             color: white;
+            border-color: var(--accent-color);
         }
-        #penRed:active{
-            background-color: rgb(255, 0, 0);
-            color: white;
+
+        button:active {
+            transform: translateY(0);
         }
-        #penBlue:active{
-            background-color:blue;
+
+        button.active {
+            background: var(--accent-color);
             color: white;
+            border-color: var(--accent-color);
+        }
+
+        input[type="color"] {
+            -webkit-appearance: none;
+            appearance: none;
+            border: none;
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            cursor: pointer;
+            background: none;
+        }
+
+        input[type="color"]::-webkit-color-swatch-wrapper {
+            padding: 0;
+        }
+
+        input[type="color"]::-webkit-color-swatch {
+            border: 2px solid var(--border-color);
+            border-radius: 50%;
+        }
+
+        input[type="range"] {
+            width: 100px;
+            cursor: pointer;
+        }
+
+        .canvas-wrapper {
+            position: relative;
+            box-shadow: var(--shadow);
+            border-radius: 16px;
+            overflow: hidden;
+            border: 1px solid var(--border-color);
+            background-color: var(--canvas-bg);
+        }
+
+        canvas {
+            display: block;
+            touch-action: none;
+            cursor: pointer;
+        }
+
+        .action-buttons {
+            margin-top: 20px;
+            display: flex;
+            gap: 10px;
+        }
+
+        #clearBtn:hover {
+            background: #ff6b6b;
+            border-color: #ff6b6b;
+        }
+
+        #saveBtn:hover {
+            background: #51cf66;
+            border-color: #51cf66;
+        }
+
+        /* Tooltip style */
+        .tooltip {
+            position: relative;
+        }
+
+        .value-display {
+            font-variant-numeric: tabular-nums;
+            min-width: 25px;
+            text-align: center;
         }
     </style>
 </head>
-<body>
-    <div class="controls">
-        <button class="colorbtn" id="penBlack">Black Pen</button>
-        <button class="colorbtn" id="penBlue">Blue Pen</button>
-        <button class="colorbtn" id="penRed">Red Pen</button>
-        <button class="colorbtn" id="eraser">Eraser</button>
-        <button class="colorbtn" id="save">Save</button>
+
+<body data-theme="light">
+    <div class="app-container">
+        <header>
+            <h1>Pro Draw v2.0</h1>
+        </header>
+
+        <div class="controls">
+            <div class="control-group">
+                <label for="colorPicker">Color</label>
+                <input type="color" id="colorPicker" value="#000000" title="Choose color">
+            </div>
+
+            <div class="control-group">
+                <label for="penSize">Size</label>
+                <input type="range" id="penSize" min="1" max="50" value="3">
+                <span class="value-display" id="penSizeVal">3</span>
+            </div>
+
+            <div class="control-group">
+                <button id="eraserBtn" title="Eraser"> Eraser</button>
+                <button id="themeBtn" title="Toggle Theme"> Dark Mode</button>
+            </div>
+
+            <div class="control-group">
+                <button id="clearBtn" title="Clear Canvas"> Clear All</button>
+                <button id="saveBtn" title="Download Image"> Save Image</button>
+            </div>
+        </div>
+
+        <div class="canvas-wrapper">
+            <canvas id="drawingCanvas"></canvas>
+        </div>
     </div>
-    <canvas id="drawingCanvas"></canvas>
 
     <script>
         const canvas = document.getElementById('drawingCanvas');
         const ctx = canvas.getContext('2d');
-        let drawing = false;
-        let color = 'black';
-        let erasing = false;
+        const colorPicker = document.getElementById('colorPicker');
+        const penSizeInput = document.getElementById('penSize');
+        const penSizeVal = document.getElementById('penSizeVal');
+        const eraserBtn = document.getElementById('eraserBtn');
+        const themeBtn = document.getElementById('themeBtn');
+        const clearBtn = document.getElementById('clearBtn');
+        const saveBtn = document.getElementById('saveBtn');
+        const body = document.body;
 
-        // Store the drawing data
+        let drawing = false;
+        let color = colorPicker.value;
+        let lineWidth = penSizeInput.value;
+        let erasing = false;
         let drawingData = [];
 
-        // Function to resize the canvas
+        // Load theme from localStorage
+        const savedTheme = localStorage.getItem('draw-theme') || 'light';
+        body.setAttribute('data-theme', savedTheme);
+        themeBtn.textContent = savedTheme === 'light' ? ' Dark Mode' : ' Light Mode';
+
+        // Initialize Canvas
+        function initCanvas() {
+            canvas.width = window.innerWidth * 0.9;
+            canvas.height = window.innerHeight * 0.7;
+
+            // Load drawing from localStorage
+            const savedDrawing = localStorage.getItem('pro-draw-data');
+            if (savedDrawing) {
+                try {
+                    drawingData = JSON.parse(savedDrawing);
+                    redrawCanvas();
+                } catch (e) {
+                    console.error("Error loading drawing data", e);
+                    drawingData = [];
+                }
+            }
+        }
+
         function resizeCanvas() {
             const oldWidth = canvas.width;
             const oldHeight = canvas.height;
 
-            canvas.width = window.innerWidth * 0.95; // 95% of the window width
-            canvas.height = window.innerHeight * 0.8; // 80% of the window height
+            const newWidth = window.innerWidth * 0.9;
+            const newHeight = window.innerHeight * 0.7;
 
-            // Redraw the saved drawing data
+            // Temporary storage
+            const tempImageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+
+            canvas.width = newWidth;
+            canvas.height = newHeight;
+
+            // Redraw everything accurately based on proportions
             redrawCanvas(oldWidth, oldHeight);
         }
 
-        // Function to redraw the canvas after resizing
         function redrawCanvas(oldWidth, oldHeight) {
-            const scaleX = canvas.width / oldWidth;
-            const scaleY = canvas.height / oldHeight;
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-            ctx.clearRect(0, 0, canvas.width, canvas.height); // Clear the canvas
+            const scaleX = oldWidth ? canvas.width / oldWidth : 1;
+            const scaleY = oldHeight ? canvas.height / oldHeight : 1;
 
             drawingData.forEach(path => {
+                if (path.points.length < 1) return;
+
                 ctx.beginPath();
                 ctx.strokeStyle = path.color;
                 ctx.lineWidth = path.lineWidth;
+                ctx.lineCap = 'round';
+                ctx.lineJoin = 'round';
+
+                const startX = oldWidth ? path.points[0].x * scaleX : path.points[0].x;
+                const startY = oldHeight ? path.points[0].y * scaleY : path.points[0].y;
+                ctx.moveTo(startX, startY);
+
                 path.points.forEach((point, index) => {
-                    const scaledX = point.x * scaleX;
-                    const scaledY = point.y * scaleY;
-                    if (index === 0) {
-                        ctx.moveTo(scaledX, scaledY);
-                    } else {
-                        ctx.lineTo(scaledX, scaledY);
+                    const x = oldWidth ? point.x * scaleX : point.x;
+                    const y = oldHeight ? point.y * scaleY : point.y;
+                    ctx.lineTo(x, y);
+
+                    // Update the points if resized
+                    if (oldWidth) {
+                        point.x = x;
+                        point.y = y;
                     }
                 });
                 ctx.stroke();
             });
         }
 
-        // Function to get the position of the touch or mouse event
         function getPosition(event) {
             const rect = canvas.getBoundingClientRect();
-            if (event.touches) {
-                return {
-                    x: event.touches[0].clientX - rect.left,
-                    y: event.touches[0].clientY - rect.top
-                };
-            } else {
-                return {
-                    x: event.offsetX,
-                    y: event.offsetY
-                };
-            }
+            const clientX = event.touches ? event.touches[0].clientX : event.clientX;
+            const clientY = event.touches ? event.touches[0].clientY : event.clientY;
+            return {
+                x: clientX - rect.left,
+                y: clientY - rect.top
+            };
         }
 
-        // Mouse and touch event listeners
         function startDrawing(event) {
             drawing = true;
             const pos = getPosition(event);
+
+            const currentPath = {
+                color: erasing ? getCanvasBgColor() : color,
+                lineWidth: lineWidth,
+                points: [pos]
+            };
+
+            drawingData.push(currentPath);
+
             ctx.beginPath();
+            ctx.strokeStyle = currentPath.color;
+            ctx.lineWidth = currentPath.lineWidth;
+            ctx.lineCap = 'round';
+            ctx.lineJoin = 'round';
             ctx.moveTo(pos.x, pos.y);
 
-            // Start a new path in the drawing data
-            drawingData.push({
-                color: erasing ? '#fff' : color,
-                lineWidth: erasing ? 30 : 2,
-                points: [{ x: pos.x, y: pos.y }]
-            });
-
-            event.preventDefault(); // Prevent scrolling on touch devices
+            if (event.type === 'touchstart') event.preventDefault();
         }
 
         function draw(event) {
-            if (drawing) {
-                const pos = getPosition(event);
-                if (erasing) {
-                    ctx.clearRect(pos.x - 15, pos.y - 15, 30, 30); // Erase a 30x30 area
-                } else {
-                    ctx.strokeStyle = color;
-                    ctx.lineCap = 'round';
-                    ctx.lineWidth = 2;
-                    ctx.lineTo(pos.x, pos.y);
-                    ctx.stroke();
-                }
+            if (!drawing) return;
 
-                // Add the current point to the last path in the drawing data
-                if (drawingData.length > 0) {
-                    drawingData[drawingData.length - 1].points.push({ x: pos.x, y: pos.y });
-                }
-            }
-            event.preventDefault(); // Prevent scrolling on touch devices
+            const pos = getPosition(event);
+            ctx.lineTo(pos.x, pos.y);
+            ctx.stroke();
+
+            drawingData[drawingData.length - 1].points.push(pos);
+
+            if (event.type === 'touchmove') event.preventDefault();
         }
 
         function stopDrawing() {
-            drawing = false;
-            ctx.closePath();
+            if (drawing) {
+                drawing = false;
+                ctx.closePath();
+                saveToLocalStorage();
+            }
         }
 
-        // Mouse event listeners
-        canvas.addEventListener('mousedown', startDrawing);
-        canvas.addEventListener('mousemove', draw);
-        canvas.addEventListener('mouseup', stopDrawing);
-        canvas.addEventListener('mouseout', stopDrawing);
+        function getCanvasBgColor() {
+            return getComputedStyle(document.documentElement).getPropertyValue('--canvas-bg').trim();
+        }
 
-        // Touch event listeners
+        function saveToLocalStorage() {
+            localStorage.setItem('pro-draw-data', JSON.stringify(drawingData));
+        }
+
+        // Event Listeners
+        colorPicker.addEventListener('input', (e) => {
+            color = e.target.value;
+            erasing = false;
+            eraserBtn.classList.remove('active');
+        });
+
+        penSizeInput.addEventListener('input', (e) => {
+            lineWidth = e.target.value;
+            penSizeVal.textContent = lineWidth;
+        });
+
+        eraserBtn.addEventListener('click', () => {
+            erasing = !erasing;
+            eraserBtn.classList.toggle('active', erasing);
+        });
+
+        themeBtn.addEventListener('click', () => {
+            const currentTheme = body.getAttribute('data-theme');
+            const newTheme = currentTheme === 'light' ? 'dark' : 'light';
+            body.setAttribute('data-theme', newTheme);
+            themeBtn.textContent = newTheme === 'light' ? ' Dark Mode' : ' Light Mode';
+            localStorage.setItem('draw-theme', newTheme);
+
+            // Re-render to handle background color changes for eraser paths if needed
+            // Actually, existing eraser paths are tied to the 'old' background color.
+            // If we want eraser to ALWAYS be the current background color, we might need a different approach.
+            // But for now, let's keep it simple.
+        });
+
+        clearBtn.addEventListener('click', () => {
+            if (confirm('Clear everything?')) {
+                drawingData = [];
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                saveToLocalStorage();
+            }
+        });
+
+        saveBtn.addEventListener('click', () => {
+            const tempCanvas = document.createElement('canvas');
+            const tempCtx = tempCanvas.getContext('2d');
+            tempCanvas.width = canvas.width;
+            tempCanvas.height = canvas.height;
+
+            // Fill background
+            tempCtx.fillStyle = getCanvasBgColor();
+            tempCtx.fillRect(0, 0, tempCanvas.width, tempCanvas.height);
+
+            // Draw regular canvas
+            tempCtx.drawImage(canvas, 0, 0);
+
+            const link = document.createElement('a');
+            link.download = `drawing-${Date.now()}.png`;
+            link.href = tempCanvas.toDataURL('image/png');
+            link.click();
+        });
+
+        // Mouse Events
+        canvas.addEventListener('mousedown', startDrawing);
+        window.addEventListener('mousemove', draw);
+        window.addEventListener('mouseup', stopDrawing);
+
+        // Touch Events
         canvas.addEventListener('touchstart', startDrawing);
         canvas.addEventListener('touchmove', draw);
         canvas.addEventListener('touchend', stopDrawing);
 
-        // Button event listeners
-        document.getElementById('penBlack').addEventListener('click', () => {
-            color = 'black';
-            erasing = false;
-            canvas.style.cursor = "default";
-        });
-
-        document.getElementById('penBlue').addEventListener('click', () => {
-            color = 'blue';
-            erasing = false;
-            canvas.style.cursor = "default";
-        });
-
-        document.getElementById('penRed').addEventListener('click', () => {
-            color = 'red';
-            erasing = false;
-            canvas.style.cursor = "default";
-        });
-
-        document.getElementById('eraser').addEventListener('click', () => {
-            erasing = true;
-            canvas.style.cursor = "wait";
-        });
-
-        document.getElementById('save').addEventListener('click', () => {
-            // Create a temporary canvas to draw the current canvas with a white background
-            const tempCanvas = document.createElement('canvas');
-            const tempCtx = tempCanvas.getContext('2d');
-
-            // Set the dimensions of the temporary canvas
-            tempCanvas.width = canvas.width;
-            tempCanvas.height = canvas.height;
-
-            // Fill the temporary canvas with a white background
-            tempCtx.fillStyle = 'white';
-            tempCtx.fillRect(0, 0, tempCanvas.width, tempCanvas.height);
-
-            // Draw the current canvas onto the temporary canvas
-            tempCtx.drawImage(canvas, 0, 0);
-
-            // Create a link to download the image
-            const link = document.createElement('a');
-            link.download = 'drawing.jpg'; // Name of the downloaded file
-            link.href = tempCanvas.toDataURL('image/jpeg'); // Convert temporary canvas to JPEG
-            link.click(); // Trigger the download
-        });
-
-        // Resize the canvas when the window is resized
         window.addEventListener('resize', resizeCanvas);
 
-        // Initial canvas size
-        resizeCanvas();
+        // Init
+        initCanvas();
     </script>
 </body>
+
 </html>
