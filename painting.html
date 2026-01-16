@@ -47,19 +47,21 @@
             display: flex;
             flex-direction: column;
             align-items: center;
-            width: 100%;
-            height: 100%;
-            padding: 5px;
+            width: 100vw;
+            height: 100vh;
+            padding: 10px;
             box-sizing: border-box;
+            overflow: hidden;
         }
 
         header {
-            margin-bottom: 20px;
+            margin-bottom: 10px;
             text-align: center;
         }
 
         h1 {
             margin: 0;
+            font-size: 1.5rem;
             font-weight: 600;
             letter-spacing: -1px;
             background: linear-gradient(45deg, var(--accent-color), #bc78ec);
@@ -71,14 +73,14 @@
         .controls {
             display: flex;
             flex-wrap: wrap;
-            gap: 15px;
-            padding: 15px 25px;
+            gap: 12px;
+            padding: 10px 20px;
             background: var(--control-bg);
             backdrop-filter: blur(10px);
-            border-radius: 20px;
+            border-radius: 16px;
             box-shadow: var(--shadow);
             border: 1px solid var(--border-color);
-            margin-bottom: 20px;
+            margin-bottom: 15px;
             z-index: 10;
             align-items: center;
             justify-content: center;
@@ -158,10 +160,14 @@
         .canvas-wrapper {
             position: relative;
             box-shadow: var(--shadow);
-            border-radius: 16px;
+            border-radius: 12px;
             overflow: hidden;
             border: 1px solid var(--border-color);
             background-color: var(--canvas-bg);
+            flex-grow: 1;
+            width: 100%;
+            max-width: 1400px;
+            margin-bottom: 5px;
         }
 
         canvas {
@@ -258,8 +264,21 @@
 
         // Initialize Canvas
         function initCanvas() {
-            canvas.width = window.innerWidth * 0.9;
-            canvas.height = window.innerHeight * 0.7;
+            // Load tool settings first
+            const savedColor = localStorage.getItem('pro-draw-color');
+            if (savedColor) {
+                color = savedColor;
+                colorPicker.value = savedColor;
+            }
+
+            const savedSize = localStorage.getItem('pro-draw-size');
+            if (savedSize) {
+                lineWidth = savedSize;
+                penSizeInput.value = savedSize;
+                penSizeVal.textContent = savedSize;
+            }
+
+            fitCanvasToContainer();
 
             // Load drawing from localStorage
             const savedDrawing = localStorage.getItem('pro-draw-data');
@@ -274,55 +293,64 @@
             }
         }
 
+        function fitCanvasToContainer() {
+            const wrapper = document.querySelector('.canvas-wrapper');
+            const rect = wrapper.getBoundingClientRect();
+
+            // Set canvas size to exactly fill its flex container
+            canvas.width = rect.width;
+            canvas.height = rect.height;
+        }
+
         function resizeCanvas() {
             const oldWidth = canvas.width;
             const oldHeight = canvas.height;
 
-            const newWidth = window.innerWidth * 0.9;
-            const newHeight = window.innerHeight * 0.7;
-
-            // Temporary storage
-            const tempImageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-
-            canvas.width = newWidth;
-            canvas.height = newHeight;
+            fitCanvasToContainer();
 
             // Redraw everything accurately based on proportions
             redrawCanvas(oldWidth, oldHeight);
         }
 
-        function redrawCanvas(oldWidth, oldHeight) {
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
+        function redrawCanvas(oldWidth, oldHeight, targetCtx = ctx, clear = true) {
+            const currentCanvas = targetCtx.canvas;
+            if (clear) {
+                targetCtx.clearRect(0, 0, currentCanvas.width, currentCanvas.height);
+            }
 
-            const scaleX = oldWidth ? canvas.width / oldWidth : 1;
-            const scaleY = oldHeight ? canvas.height / oldHeight : 1;
+            const scaleX = oldWidth ? currentCanvas.width / oldWidth : 1;
+            const scaleY = oldHeight ? currentCanvas.height / oldHeight : 1;
 
             drawingData.forEach(path => {
                 if (path.points.length < 1) return;
 
-                ctx.beginPath();
-                ctx.strokeStyle = path.color;
-                ctx.lineWidth = path.lineWidth;
-                ctx.lineCap = 'round';
-                ctx.lineJoin = 'round';
+                targetCtx.beginPath();
+                // Use destination-out for eraser to truly "remove" content
+                targetCtx.globalCompositeOperation = path.isEraser ? 'destination-out' : 'source-over';
+                targetCtx.strokeStyle = path.color;
+                targetCtx.lineWidth = path.lineWidth;
+                targetCtx.lineCap = 'round';
+                targetCtx.lineJoin = 'round';
 
                 const startX = oldWidth ? path.points[0].x * scaleX : path.points[0].x;
                 const startY = oldHeight ? path.points[0].y * scaleY : path.points[0].y;
-                ctx.moveTo(startX, startY);
+                targetCtx.moveTo(startX, startY);
 
                 path.points.forEach((point, index) => {
                     const x = oldWidth ? point.x * scaleX : point.x;
                     const y = oldHeight ? point.y * scaleY : point.y;
-                    ctx.lineTo(x, y);
+                    targetCtx.lineTo(x, y);
 
-                    // Update the points if resized
-                    if (oldWidth) {
+                    if (oldWidth && targetCtx === ctx) {
                         point.x = x;
                         point.y = y;
                     }
                 });
-                ctx.stroke();
+                targetCtx.stroke();
             });
+
+            // Reset composite operation to default
+            targetCtx.globalCompositeOperation = 'source-over';
         }
 
         function getPosition(event) {
@@ -340,7 +368,8 @@
             const pos = getPosition(event);
 
             const currentPath = {
-                color: erasing ? getCanvasBgColor() : color,
+                color: color,
+                isEraser: erasing,
                 lineWidth: lineWidth,
                 points: [pos]
             };
@@ -348,6 +377,7 @@
             drawingData.push(currentPath);
 
             ctx.beginPath();
+            ctx.globalCompositeOperation = currentPath.isEraser ? 'destination-out' : 'source-over';
             ctx.strokeStyle = currentPath.color;
             ctx.lineWidth = currentPath.lineWidth;
             ctx.lineCap = 'round';
@@ -388,6 +418,7 @@
         // Event Listeners
         colorPicker.addEventListener('input', (e) => {
             color = e.target.value;
+            localStorage.setItem('pro-draw-color', color);
             erasing = false;
             eraserBtn.classList.remove('active');
         });
@@ -395,6 +426,7 @@
         penSizeInput.addEventListener('input', (e) => {
             lineWidth = e.target.value;
             penSizeVal.textContent = lineWidth;
+            localStorage.setItem('pro-draw-size', lineWidth);
         });
 
         eraserBtn.addEventListener('click', () => {
@@ -409,10 +441,8 @@
             themeBtn.textContent = newTheme === 'light' ? ' Dark Mode' : ' Light Mode';
             localStorage.setItem('draw-theme', newTheme);
 
-            // Re-render to handle background color changes for eraser paths if needed
-            // Actually, existing eraser paths are tied to the 'old' background color.
-            // If we want eraser to ALWAYS be the current background color, we might need a different approach.
-            // But for now, let's keep it simple.
+            // Re-render to update eraser background color
+            redrawCanvas();
         });
 
         clearBtn.addEventListener('click', () => {
@@ -424,21 +454,31 @@
         });
 
         saveBtn.addEventListener('click', () => {
-            const tempCanvas = document.createElement('canvas');
-            const tempCtx = tempCanvas.getContext('2d');
-            tempCanvas.width = canvas.width;
-            tempCanvas.height = canvas.height;
+            // 1. Create a scratch canvas to draw all paths with transparency
+            const scratchCanvas = document.createElement('canvas');
+            scratchCanvas.width = canvas.width;
+            scratchCanvas.height = canvas.height;
+            const sCtx = scratchCanvas.getContext('2d');
 
-            // Fill background
-            tempCtx.fillStyle = getCanvasBgColor();
-            tempCtx.fillRect(0, 0, tempCanvas.width, tempCanvas.height);
+            // Draw everything onto scratch (handles erasers as transparent holes)
+            redrawCanvas(0, 0, sCtx);
 
-            // Draw regular canvas
-            tempCtx.drawImage(canvas, 0, 0);
+            // 2. Create the final canvas with the theme background
+            const finalCanvas = document.createElement('canvas');
+            finalCanvas.width = canvas.width;
+            finalCanvas.height = canvas.height;
+            const fCtx = finalCanvas.getContext('2d');
+
+            // Fill theme background
+            fCtx.fillStyle = getCanvasBgColor();
+            fCtx.fillRect(0, 0, finalCanvas.width, finalCanvas.height);
+
+            // Draw the scratch canvas (drawing + holes) onto the background
+            fCtx.drawImage(scratchCanvas, 0, 0);
 
             const link = document.createElement('a');
             link.download = `drawing-${Date.now()}.png`;
-            link.href = tempCanvas.toDataURL('image/png');
+            link.href = finalCanvas.toDataURL('image/png');
             link.click();
         });
 
