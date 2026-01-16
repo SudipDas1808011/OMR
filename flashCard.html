@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -48,7 +49,7 @@
       height: 100%;
       backface-visibility: hidden;
       border-radius: 12px;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
       display: flex;
       justify-content: center;
       align-items: center;
@@ -129,6 +130,47 @@
       box-sizing: border-box;
     }
 
+    .history-section {
+      margin-top: 30px;
+      width: 100%;
+      max-width: 650px;
+      border-top: 1px solid #ccc;
+      padding-top: 20px;
+    }
+
+    .history-list {
+      list-style: none;
+      padding: 0;
+    }
+
+    .history-item {
+      background: white;
+      padding: 10px 15px;
+      border-radius: 6px;
+      margin-bottom: 8px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    .history-item:hover {
+      background: #e3f2fd;
+    }
+
+    .history-item-title {
+      font-weight: bold;
+      color: #1e88e5;
+    }
+
+    .delete-history-btn {
+      background: #e53935;
+      padding: 4px 8px;
+      font-size: 0.8rem;
+    }
+
     @media (max-width: 600px) {
       h1 {
         font-size: 1.6rem;
@@ -185,14 +227,23 @@
 
   <div class="json-input-area">
     <h3>JSON Input</h3>
+    <input id="json-title" type="text" placeholder="Title for history (e.g. Science, Math)">
     <textarea id="json-input"></textarea>
-    <button id="load-json-btn">Load JSON</button>
+    <div class="controls" style="margin-top: 5px;">
+      <button id="load-json-btn">Load JSON</button>
+      <button id="save-json-btn">Save to History</button>
+    </div>
     <div class="error" id="error-msg"></div>
 
     <h3>Add New Card</h3>
     <input id="new-front" type="text" placeholder="Front text">
     <input id="new-back" type="text" placeholder="Back text">
     <button id="add-card-btn">Add Card</button>
+  </div>
+
+  <div class="history-section">
+    <h3>History</h3>
+    <ul id="history-list" class="history-list"></ul>
   </div>
 
   <script>
@@ -207,8 +258,11 @@
     const nextBtn = document.getElementById("next-btn");
     const indexInfoEl = document.getElementById("index-info");
     const jsonInput = document.getElementById("json-input");
+    const jsonTitle = document.getElementById("json-title");
     const loadJsonBtn = document.getElementById("load-json-btn");
+    const saveJsonBtn = document.getElementById("save-json-btn");
     const errorMsg = document.getElementById("error-msg");
+    const historyList = document.getElementById("history-list");
 
     const newFront = document.getElementById("new-front");
     const newBack = document.getElementById("new-back");
@@ -278,6 +332,39 @@
       }
     });
 
+    saveJsonBtn.addEventListener("click", () => {
+      errorMsg.textContent = "";
+      const title = jsonTitle.value.trim();
+      if (!title) {
+        errorMsg.textContent = "Please provide a title to save to history.";
+        return;
+      }
+
+      try {
+        const content = JSON.parse(jsonInput.value.trim());
+        const history = JSON.parse(localStorage.getItem("flashcardHistory") || "[]");
+
+        // Check if title already exists, if so update it, otherwise add new
+        const existingIndex = history.findIndex(h => h.title === title);
+        if (existingIndex > -1) {
+          history[existingIndex].data = content;
+        } else {
+          history.push({ title, data: content });
+        }
+
+        localStorage.setItem("flashcardHistory", JSON.stringify(history));
+        renderHistory();
+        errorMsg.style.color = "green";
+        errorMsg.textContent = "Saved to history!";
+        setTimeout(() => {
+          errorMsg.textContent = "";
+          errorMsg.style.color = "red";
+        }, 3000);
+      } catch (e) {
+        errorMsg.textContent = "Invalid JSON: " + e.message;
+      }
+    });
+
     addCardBtn.addEventListener("click", () => {
       const front = newFront.value.trim();
       const back = newBack.value.trim();
@@ -307,8 +394,48 @@
       newBack.value = "";
     });
 
+    function renderHistory() {
+      const history = JSON.parse(localStorage.getItem("flashcardHistory") || "[]");
+      historyList.innerHTML = "";
+
+      history.forEach((item, index) => {
+        const li = document.createElement("li");
+        li.className = "history-item";
+
+        const titleSpan = document.createElement("span");
+        titleSpan.className = "history-item-title";
+        titleSpan.textContent = item.title;
+        titleSpan.addEventListener("click", () => {
+          jsonInput.value = JSON.stringify(item.data, null, 2);
+          jsonTitle.value = item.title;
+          loadFromObject(item.data);
+        });
+
+        const deleteBtn = document.createElement("button");
+        deleteBtn.className = "delete-history-btn";
+        deleteBtn.textContent = "Delete";
+        deleteBtn.addEventListener("click", (e) => {
+          e.stopPropagation();
+          deleteHistoryItem(index);
+        });
+
+        li.appendChild(titleSpan);
+        li.appendChild(deleteBtn);
+        historyList.appendChild(li);
+      });
+    }
+
+    function deleteHistoryItem(index) {
+      const history = JSON.parse(localStorage.getItem("flashcardHistory") || "[]");
+      history.splice(index, 1);
+      localStorage.setItem("flashcardHistory", JSON.stringify(history));
+      renderHistory();
+    }
+
     jsonInput.value = JSON.stringify(cardsData, null, 2);
     loadFromObject(cardsData);
+    renderHistory();
   </script>
 </body>
+
 </html>
