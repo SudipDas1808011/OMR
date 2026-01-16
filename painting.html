@@ -408,7 +408,7 @@
         }
 
         function getCanvasBgColor() {
-            return getComputedStyle(document.documentElement).getPropertyValue('--canvas-bg').trim();
+            return getComputedStyle(body).getPropertyValue('--canvas-bg').trim();
         }
 
         function saveToLocalStorage() {
