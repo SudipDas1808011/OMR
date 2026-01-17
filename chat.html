@@ -5,7 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Simple Chat App</title>
-  <link rel="icon" type="image/png" href="assets/chat.png">
+    <link rel="icon" type="image/png" href="assets/chat.png">
 
     <style>
         /* CSS Settings */
@@ -123,9 +123,53 @@
     <script>
         const chatWindow = document.getElementById('chat-window');
         const msgInput = document.getElementById('msg-input');
+        let messages = [];
 
-        // 1. LocalStorage theke chat load kora
-        let messages = JSON.parse(localStorage.getItem('chatHistory')) || [];
+        // IndexedDB Setup
+        const DB_NAME = 'ChatAppDB';
+        const STORE_NAME = 'chatStore';
+        const DATA_KEY = 'chatHistory';
+
+        function openDB() {
+            return new Promise((resolve, reject) => {
+                const request = indexedDB.open(DB_NAME, 1);
+                request.onupgradeneeded = (event) => {
+                    const db = event.target.result;
+                    if (!db.objectStoreNames.contains(STORE_NAME)) {
+                        db.createObjectStore(STORE_NAME);
+                    }
+                };
+                request.onsuccess = () => resolve(request.result);
+                request.onerror = () => reject(request.error);
+            });
+        }
+
+        async function saveMessagesToDB() {
+            try {
+                const db = await openDB();
+                const tx = db.transaction(STORE_NAME, 'readwrite');
+                const store = tx.objectStore(STORE_NAME);
+                store.put(messages, DATA_KEY);
+            } catch (err) {
+                console.error("Failed to save messages:", err);
+            }
+        }
+
+        async function loadMessagesFromDB() {
+            try {
+                const db = await openDB();
+                const tx = db.transaction(STORE_NAME, 'readonly');
+                const store = tx.objectStore(STORE_NAME);
+                return new Promise((resolve) => {
+                    const request = store.get(DATA_KEY);
+                    request.onsuccess = () => resolve(request.result || []);
+                    request.onerror = () => resolve([]);
+                });
+            } catch (err) {
+                console.error("Failed to load messages:", err);
+                return [];
+            }
+        }
 
         function renderMessages() {
             chatWindow.innerHTML = '';
@@ -139,11 +183,11 @@
         }
 
         // 2. Message Pathano
-        function sendMessage() {
+        async function sendMessage() {
             const text = msgInput.value.trim();
             if (text !== "") {
                 messages.push(text);
-                localStorage.setItem('chatHistory', JSON.stringify(messages));
+                await saveMessagesToDB();
                 msgInput.value = '';
                 renderMessages();
             }
@@ -175,12 +219,12 @@
             if (!file) return;
 
             const reader = new FileReader();
-            reader.onload = function (e) {
+            reader.onload = async function (e) {
                 try {
                     const importedData = JSON.parse(e.target.result);
                     if (Array.isArray(importedData)) {
                         messages = importedData;
-                        localStorage.setItem('chatHistory', JSON.stringify(messages));
+                        await saveMessagesToDB();
                         renderMessages();
                         alert("Chat successfully load hoyeche!");
                     } else {
@@ -194,7 +238,27 @@
         }
 
         // Initial load
-        renderMessages();
+        async function init() {
+            messages = await loadMessagesFromDB();
+
+            // Migration: If IndexedDB is empty but localStorage has data, migrate it
+            if (messages.length === 0) {
+                const localData = localStorage.getItem('chatHistory');
+                if (localData) {
+                    try {
+                        messages = JSON.parse(localData);
+                        await saveMessagesToDB();
+                        // Optional: Clear localStorage after migration
+                        // localStorage.removeItem('chatHistory');
+                    } catch (e) {
+                        console.error("Migration failed:", e);
+                    }
+                }
+            }
+
+            renderMessages();
+        }
+        init();
     </script>
 
 </body>
