@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="bn">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simple Chat App</title>
+  <link rel="icon" type="image/png" href="assets/chat.png">
+
+    <style>
+        /* CSS Settings */
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background-color: #e5ddd5;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Header */
+        header {
+            background: #075e54;
+            color: white;
+            padding: 15px;
+            text-align: center;
+            font-weight: bold;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .header-btns button {
+            background: #128c7e;
+            border: none;
+            color: white;
+            padding: 5px 10px;
+            cursor: pointer;
+            border-radius: 4px;
+            font-size: 12px;
+            margin-left: 5px;
+        }
+
+        /* Chat Window */
+        #chat-window {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .message {
+            max-width: 70%;
+            padding: 8px 12px;
+            border-radius: 8px;
+            font-size: 14px;
+            position: relative;
+            word-wrap: break-word;
+            align-self: flex-end;
+            background: #dcf8c6;
+            box-shadow: 0 1px 1px rgba(0, 0, 0, 0.1);
+        }
+
+        /* Input Area */
+        .input-area {
+            background: #f0f0f0;
+            padding: 10px;
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        input[type="text"] {
+            flex: 1;
+            padding: 10px;
+            border: none;
+            border-radius: 20px;
+            outline: none;
+        }
+
+        button#send-btn {
+            background: #075e54;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 50%;
+            cursor: pointer;
+        }
+
+        /* Hidden File Input */
+        #file-input {
+            display: none;
+        }
+    </style>
+</head>
+
+<body>
+
+    <header>
+        <span>Privates Chat</span>
+        <div class="header-btns">
+            <button onclick="exportChat()">Export JSON</button>
+            <button onclick="document.getElementById('file-input').click()">Load JSON</button>
+            <input type="file" id="file-input" accept=".json" onchange="loadChat(event)">
+        </div>
+    </header>
+
+    <div id="chat-window">
+    </div>
+
+    <div class="input-area">
+        <input type="text" id="msg-input" placeholder="Type a message..." onkeypress="handleKey(event)">
+        <button id="send-btn" onclick="sendMessage()">➤</button>
+    </div>
+
+    <script>
+        const chatWindow = document.getElementById('chat-window');
+        const msgInput = document.getElementById('msg-input');
+
+        // 1. LocalStorage theke chat load kora
+        let messages = JSON.parse(localStorage.getItem('chatHistory')) || [];
+
+        function renderMessages() {
+            chatWindow.innerHTML = '';
+            messages.forEach(msg => {
+                const div = document.createElement('div');
+                div.className = 'message';
+                div.textContent = msg;
+                chatWindow.appendChild(div);
+            });
+            chatWindow.scrollTop = chatWindow.scrollHeight;
+        }
+
+        // 2. Message Pathano
+        function sendMessage() {
+            const text = msgInput.value.trim();
+            if (text !== "") {
+                messages.push(text);
+                localStorage.setItem('chatHistory', JSON.stringify(messages));
+                msgInput.value = '';
+                renderMessages();
+            }
+        }
+
+        function handleKey(e) {
+            if (e.key === 'Enter') sendMessage();
+        }
+
+        // 3. Export JSON (Title shoho)
+        function exportChat() {
+            if (messages.length === 0) return alert("Export korar moto kono message nei!");
+
+            const fileName = prompt("File-er ekti nam din:", "my_chat");
+            if (!fileName) return; // Cancel korle kichu hobe na
+
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(messages));
+            const downloadAnchorNode = document.createElement('a');
+            downloadAnchorNode.setAttribute("href", dataStr);
+            downloadAnchorNode.setAttribute("download", fileName + ".json");
+            document.body.appendChild(downloadAnchorNode);
+            downloadAnchorNode.click();
+            downloadAnchorNode.remove();
+        }
+
+        // 4. Load JSON
+        function loadChat(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function (e) {
+                try {
+                    const importedData = JSON.parse(e.target.result);
+                    if (Array.isArray(importedData)) {
+                        messages = importedData;
+                        localStorage.setItem('chatHistory', JSON.stringify(messages));
+                        renderMessages();
+                        alert("Chat successfully load hoyeche!");
+                    } else {
+                        alert("Vul JSON format!");
+                    }
+                } catch (err) {
+                    alert("File-ti pora jachhe na!");
+                }
+            };
+            reader.readAsText(file);
+        }
+
+        // Initial load
+        renderMessages();
+    </script>
+
+</body>
+
+</html>
