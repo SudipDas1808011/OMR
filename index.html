@@ -1,35 +1,74 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dynamic OMR Sheet</title>
+    <title>Premium OMR System</title>
     <link rel="icon" href="favicon.ico" type="image/x-icon">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="styles.css">
 </head>
+
 <body>
+    <div class="background-blobs">
+        <div class="blob blob-1"></div>
+        <div class="blob blob-2"></div>
+        <div class="blob blob-3"></div>
+    </div>
+
     <div class="container">
-        <h1>Dynamic OMR Sheet</h1>
-        <label for="startNumber">Enter starting number:</label>
-        <input type="number" id="startNumber" value="1" min="1"><br>
-        <label for="numQuestions">Enter number of questions:</label>
-        <input type="number" id="numQuestions" min="1" max="100">
-        <button id="generateBtn">Generate OMR Sheet</button>
+        <header>
+            <h1>Dynamic OMR Sheet</h1>
+            <p class="subtitle">Generate and evaluate digital OMR sheets instantly</p>
+        </header>
 
-        <form id="omrForm" style="display: none;">
-            <div id="questionsContainer"></div>
-            <button type="submit" id="submitbtn">Submit</button>
-            <button type="button" id="checkAnswersBtn">Check Answers</button>
-        </form>
+        <section class="config-card">
+            <div class="input-grid">
+                <div class="input-group">
+                    <label for="startNumber">Starting Number</label>
+                    <input type="number" id="startNumber" value="1" min="1" placeholder="e.g. 1">
+                </div>
+                <div class="input-group">
+                    <label for="lastNumber">Last Number</label>
+                    <input type="number" id="lastNumber" min="1" placeholder="e.g. 50">
+                </div>
+            </div>
+            <button id="generateBtn" class="primary-btn">Generate OMR Sheet</button>
+        </section>
 
-        <div id="results" style="display: none;">
-            <h2>Your Answers:</h2>
+        <main id="omrSection" style="display: none;">
+            <form id="omrForm">
+                <div class="form-header">
+                    <h2>Examination Sheet</h2>
+                    <div class="badge">Draft</div>
+                </div>
+                <div id="questionsContainer" class="questions-grid"></div>
+                <div class="form-actions">
+                    <button type="submit" id="submitbtn" class="submit-btn text-gradient">Submit Answers</button>
+                    <button type="button" id="checkAnswersBtn" class="check-btn" style="display: none;">Check
+                        Results</button>
+                </div>
+            </form>
+        </main>
+
+        <section id="results" class="results-card" style="display: none;">
+            <div class="results-header">
+                <h2>Performance Summary</h2>
+            </div>
+            <div class="stats-container">
+                <div class="stat-item">
+                    <span class="stat-label">Total Score</span>
+                    <span id="score" class="stat-value">0</span>
+                </div>
+            </div>
             <div id="answersContainer"></div>
-            <h3 id="score"></h3>
-        </div>
+        </section>
     </div>
 
     <script src="script.js"></script>
 </body>
-</html>
 
+</html>

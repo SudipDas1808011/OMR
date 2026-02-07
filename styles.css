@@ -1,66 +1,366 @@
+:root {
+    --primary: #6366f1;
+    --primary-hover: #4f46e5;
+    --secondary: #ec4899;
+    --accent: #8b5cf6;
+    --background: #0f172a;
+    --card-bg: rgba(30, 41, 59, 0.7);
+    --text: #f8fafc;
+    --text-muted: #94a3b8;
+    --border: rgba(255, 255, 255, 0.1);
+    --glass: rgba(255, 255, 255, 0.05);
+    --success: #22c55e;
+    --error: #ef4444;
+    --warning: #f59e0b;
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: 'Inter', sans-serif;
+}
+
 body {
-    font-family: Arial, sans-serif;
-    margin: 20px;
+    background-color: var(--background);
+    color: var(--text);
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    padding: 2rem 1rem;
+    overflow-x: hidden;
+}
+
+/* Background Decorations */
+.background-blobs {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: -1;
+    filter: blur(80px);
+}
+
+.blob {
+    position: absolute;
+    border-radius: 50%;
+    opacity: 0.4;
+    animation: move 20s infinite alternate;
+}
+
+.blob-1 {
+    width: 400px;
+    height: 400px;
+    background: var(--primary);
+    top: -100px;
+    right: -100px;
+}
+
+.blob-2 {
+    width: 300px;
+    height: 300px;
+    background: var(--secondary);
+    bottom: -50px;
+    left: -50px;
+    animation-delay: -5s;
+}
+
+.blob-3 {
+    width: 250px;
+    height: 250px;
+    background: var(--accent);
+    top: 40%;
+    left: 30%;
+    animation-delay: -10s;
+}
+
+@keyframes move {
+    from {
+        transform: translate(0, 0) scale(1);
+    }
+
+    to {
+        transform: translate(50px, 50px) scale(1.1);
+    }
 }
 
 .container {
-    max-width: 600px;
-    margin: auto;
+    width: 100%;
+    max-width: 800px;
+    z-index: 1;
+}
+
+header {
+    text-align: center;
+    margin-bottom: 2rem;
+}
+
+h1 {
+    font-size: 2.5rem;
+    font-weight: 700;
+    background: linear-gradient(to right, #fff, var(--primary));
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    margin-bottom: 0.5rem;
+}
+
+.subtitle {
+    color: var(--text-muted);
+    font-size: 1.1rem;
+}
+
+/* Cards */
+.config-card,
+.results-card,
+main {
+    background: var(--card-bg);
+    backdrop-filter: blur(12px);
+    border: 1px solid var(--border);
+    border-radius: 1.5rem;
+    padding: 2rem;
+    margin-bottom: 2rem;
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+}
+
+.input-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.5rem;
+    margin-bottom: 1.5rem;
+}
+
+.input-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+label {
+    font-size: 0.9rem;
+    font-weight: 500;
+    color: var(--text-muted);
+}
+
+input[type="number"] {
+    background: var(--glass);
+    border: 1px solid var(--border);
+    border-radius: 0.75rem;
+    padding: 0.75rem 1rem;
+    color: #fff;
+    font-size: 1rem;
+    outline: none;
+    transition: all 0.2s;
+}
+
+input[type="number"]:focus {
+    border-color: var(--primary);
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.primary-btn,
+.submit-btn,
+.check-btn {
+    width: 100%;
+    padding: 1rem;
+    border-radius: 0.75rem;
+    border: none;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.primary-btn {
+    background: var(--primary);
+    color: #fff;
+}
+
+.primary-btn:hover {
+    background: var(--primary-hover);
+    transform: translateY(-2px);
+}
+
+/* Question Section */
+.form-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 2rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid var(--border);
+}
+
+.badge {
+    background: var(--glass);
+    padding: 0.25rem 0.75rem;
+    border-radius: 2rem;
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.questions-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+    margin-bottom: 2rem;
 }
 
 .question {
-    margin: 10px 0;
+    display: grid;
+    grid-template-columns: 3rem 1fr;
+    align-items: center;
+    gap: 1rem;
+    padding: 0.75rem;
+    border-radius: 1rem;
+    transition: background 0.2s;
 }
 
-button {
-    margin-top: 10px;
+.question:hover {
+    background: var(--glass);
 }
 
-.question label {
-    border-radius: 50px;
-    padding: 2px;
+.q-num {
+    font-weight: 600;
+    color: var(--primary);
+    font-size: 1.1rem;
 }
 
-.question input[type="radio"] {
-    width: 20px;
-    height: 20px;
-    appearance: none;
-    border: 2px solid #000;
-    border-radius: 50%;
-    outline: none;
-    position: relative;
+.options {
+    display: flex;
+    gap: 1.5rem;
 }
 
-.question input[type="radio"]:checked {
-    background-color: #000305;
-}
-
-.question input[type="radio"]:checked::after {
-    content: '';
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    width: 10px;
-    height: 10px;
-    background-color: #000000;
-    border-radius: 50%;
-    transform: translate(-50%, -50%);
-}
-
-.question label {
-    display: inline-block;
-    margin-right: 1px;
+.option-label {
     position: relative;
     cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
 }
 
-.question label::before {
+.option-label input[type="radio"] {
+    appearance: none;
+    width: 32px;
+    height: 32px;
+    border: 2px solid var(--text-muted);
+    border-radius: 50%;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.option-label input[type="radio"]:checked {
+    background: var(--text);
+    border-color: var(--text);
+}
+
+.option-label::after {
     content: attr(data-label);
     position: absolute;
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
-    font-size: 12px;
-    color: #080000;
+    font-size: 0.85rem;
+    font-weight: 800;
+    color: var(--text-muted);
+    pointer-events: none;
+    text-transform: uppercase;
+    z-index: 2;
 }
 
+.option-label input[type="radio"]:checked+.option-text {
+    color: var(--background);
+}
+
+/* Map the data-label to the text color when checked */
+.option-label:has(input:checked)::after {
+    color: var(--background);
+}
+
+.form-actions {
+    display: flex;
+    gap: 1rem;
+}
+
+.submit-btn {
+    background: linear-gradient(to right, var(--primary), var(--accent));
+    color: #fff;
+}
+
+.check-btn {
+    background: var(--glass);
+    border: 1px solid var(--border);
+    color: #fff;
+}
+
+/* Results */
+.stats-container {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 2rem;
+}
+
+.stat-item {
+    text-align: center;
+}
+
+.stat-label {
+    display: block;
+    font-size: 0.9rem;
+    color: var(--text-muted);
+    margin-bottom: 0.5rem;
+}
+
+.stat-value {
+    font-size: 3rem;
+    font-weight: 800;
+    color: var(--success);
+}
+
+/* Answer indicators */
+.correct-bubble,
+.wrong-bubble,
+.unanswered-bubble {
+    border-radius: 50% !important;
+    border: none !important;
+}
+
+.correct-bubble {
+    background-color: var(--success) !important;
+}
+
+.wrong-bubble {
+    background-color: var(--error) !important;
+}
+
+.unanswered-bubble {
+    background-color: var(--warning) !important;
+}
+
+/* Ensure labels are visible over the colors */
+.correct-bubble::after,
+.wrong-bubble::after,
+.unanswered-bubble::after {
+    color: var(--background) !important;
+}
+
+.correct-bubble input[type="radio"],
+.wrong-bubble input[type="radio"],
+.unanswered-bubble input[type="radio"] {
+    border-color: transparent !important;
+    background: transparent !important;
+}
+
+@media (max-width: 600px) {
+    .input-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .options {
+        gap: 0.75rem;
+    }
+}

@@ -1,107 +1,129 @@
 let selectedAnswers = []; // Array to hold the user's selected answers
-document.getElementById('generateBtn').addEventListener('click', function() {
-    document.getElementById("checkAnswersBtn").style.display = 'none';
-    document.getElementById("submitbtn").style.display = 'block';
-    
-    const startNumber = parseInt(document.getElementById('startNumber').value) || 1; // Get starting number
-    const numQuestions = document.getElementById('numQuestions').value;
+
+document.getElementById('generateBtn').addEventListener('click', function () {
+    const startNumber = parseInt(document.getElementById('startNumber').value) || 1;
+    const lastNumber = parseInt(document.getElementById('lastNumber').value);
+
+    if (isNaN(lastNumber) || lastNumber < startNumber) {
+        alert("Please enter a valid Last Number greater than or equal to the Start Number.");
+        return;
+    }
+
+    const numQuestions = lastNumber - startNumber + 1;
     const questionsContainer = document.getElementById('questionsContainer');
-    questionsContainer.innerHTML = ''; // Clear previous questions
-    selectedAnswers = []; // Reset selected answers
+    const omrSection = document.getElementById('omrSection');
+    const resultsSection = document.getElementById('results');
+
+    questionsContainer.innerHTML = '';
+    selectedAnswers = [];
 
     for (let i = 0; i < numQuestions; i++) {
-        const questionNumber = startNumber + i; // Calculate question number
+        const questionNumber = startNumber + i;
         const questionHTML = `
-            <div class="question">
-                <p id="${questionNumber}">${questionNumber}. <label data-label='a'><input type="radio" name="q${questionNumber}" value="A"></label> 
-                <label data-label='b'><input type="radio" name="q${questionNumber}" value="B"> </label> 
-                <label data-label='c'><input type="radio" name="q${questionNumber}" value="C"> </label> 
-                <label data-label='d'><input type="radio" name="q${questionNumber}" value="D"> </label></p>
+            <div class="question" id="q-row-${questionNumber}">
+                <span class="q-num">${questionNumber}</span>
+                <div class="options">
+                    <label class="option-label" data-label="a">
+                        <input type="radio" name="q${questionNumber}" value="A">
+                    </label> 
+                    <label class="option-label" data-label="b">
+                        <input type="radio" name="q${questionNumber}" value="B">
+                    </label> 
+                    <label class="option-label" data-label="c">
+                        <input type="radio" name="q${questionNumber}" value="C">
+                    </label> 
+                    <label class="option-label" data-label="d">
+                        <input type="radio" name="q${questionNumber}" value="D">
+                    </label>
+                </div>
             </div>
         `;
         questionsContainer.innerHTML += questionHTML;
     }
 
-    document.getElementById('omrForm').style.display = 'block'; // Show the form
-    document.getElementById('results').style.display = 'none'; // Hide results
+    omrSection.style.display = 'block';
+    resultsSection.style.display = 'none';
+    document.getElementById("submitbtn").style.display = 'block';
+    document.getElementById("checkAnswersBtn").style.display = 'none';
+
+    // Smooth scroll to OMR section
+    omrSection.scrollIntoView({ behavior: 'smooth' });
 });
 
-document.getElementById('omrForm').addEventListener('submit', function(event) {
-    event.preventDefault(); // Prevent form submission
+document.getElementById('omrForm').addEventListener('submit', function (event) {
+    event.preventDefault();
+
     document.getElementById("submitbtn").style.display = 'none';
     document.getElementById("checkAnswersBtn").style.display = 'block';
-    const answersContainer = document.getElementById('answersContainer');
-    answersContainer.innerHTML = ''; // Clear previous answers
-    selectedAnswers = []; // Reset selected answers
 
-    const numQuestions = document.getElementById('numQuestions').value;
-    const startNumber = parseInt(document.getElementById('startNumber').value) || 1; // Get starting number
+    const startNumber = parseInt(document.getElementById('startNumber').value) || 1;
+    const lastNumber = parseInt(document.getElementById('lastNumber').value);
+    const numQuestions = lastNumber - startNumber + 1;
+
+    selectedAnswers = [];
 
     for (let i = 0; i < numQuestions; i++) {
-        const questionNumber = startNumber + i; // Calculate question number
+        const questionNumber = startNumber + i;
         const answer = document.querySelector(`input[name="q${questionNumber}"]:checked`);
-        if (answer) {
-            selectedAnswers.push(answer.value); // Store the selected answer
-        } else {
-            selectedAnswers.push(null); // Store null for unanswered questions
-        }
+        selectedAnswers.push(answer ? answer.value : null);
     }
 
-    document.getElementById('results').style.display = 'block'; // Show results
+    // Show results section briefly to indicate submission
+    const resultsSection = document.getElementById('results');
+    resultsSection.style.display = 'block';
+    document.getElementById('score').innerText = "Submitted! Now check the answers.";
+    resultsSection.scrollIntoView({ behavior: 'smooth' });
 });
 
-document.getElementById('checkAnswersBtn').addEventListener('click', function() {
-    document.getElementById("submitbtn").style.display = 'none';
-    document.getElementById("checkAnswersBtn").style.display = 'none';
-    
-    const numQuestions = document.getElementById('numQuestions').value;
-    const answersContainer = document.getElementById('answersContainer');
-    const scoreContainer = document.getElementById('score');
+document.getElementById('checkAnswersBtn').addEventListener('click', function () {
+    const startNumber = parseInt(document.getElementById('startNumber').value) || 1;
+    const lastNumber = parseInt(document.getElementById('lastNumber').value);
+    const numQuestions = lastNumber - startNumber + 1;
+
     let score = 0;
 
-    // Clear previous score
-    scoreContainer.innerHTML = '';
-    const startNumber = parseInt(document.getElementById('startNumber').value) || 1; // Get starting number
-
-    // Compare submitted answers with currently selected answers
     for (let i = 0; i < numQuestions; i++) {
-        const questionNumber = startNumber + i; // Calculate question number
-        const currentAnswer = document.querySelector(`input[name="q${questionNumber}"]:checked`);
-        const previousAnswer = selectedAnswers[i];
+        const questionNumber = startNumber + i;
+        const currentAnswerElement = document.querySelector(`input[name="q${questionNumber}"]:checked`);
+        const previousAnswerVisible = selectedAnswers[i];
 
-        if (currentAnswer) {
-            const paragraph = document.getElementById(questionNumber.toString());
-            if (previousAnswer === currentAnswer.value) {
+        const questionRow = document.getElementById(`q-row-${questionNumber}`);
+        const inputs = questionRow.querySelectorAll('input[type="radio"]');
+
+        // Reset styles first
+        inputs.forEach(input => {
+            input.parentElement.classList.remove('correct-bubble', 'wrong-bubble', 'unanswered-bubble');
+        });
+
+        if (currentAnswerElement) {
+            const currentValue = currentAnswerElement.value;
+
+            if (previousAnswerVisible === currentValue) {
+                // Correct match
                 score++;
+                currentAnswerElement.parentElement.classList.add('correct-bubble');
             } else {
-                if (previousAnswer != null) {
-                    const labelAnsRed = paragraph.querySelector(`input[type="radio"][value="${previousAnswer}"]`).parentElement;  
-                    labelAnsRed.style.backgroundColor = 'red';  
-                }            
-            }
-            if (currentAnswer.value != null) {
-                const labelAns = paragraph.querySelector(`input[type="radio"][value="${currentAnswer.value}"]`).parentElement;
-                let colorNow = 'green';
-                if (previousAnswer == null) {
-                    colorNow = 'yellow';
+                // Wrong match or student didn't answer
+                if (previousAnswerVisible !== null) {
+                    const originalInput = questionRow.querySelector(`input[value="${previousAnswerVisible}"]`);
+                    originalInput.parentElement.classList.add('wrong-bubble');
+                    // Show what was correct
+                    currentAnswerElement.parentElement.classList.add('correct-bubble');
+                } else {
+                    // Student didn't answer - mark the correct one yellow as requested
+                    currentAnswerElement.parentElement.classList.add('unanswered-bubble');
                 }
-                labelAns.style.backgroundColor = colorNow; 
             }
         }
     }
-    uncheckAllRadioButtons();
 
-    // Display score
-    scoreContainer.innerHTML = `Correct: ${score} out of ${numQuestions}`;
+    document.getElementById('score').innerText = `${score} / ${numQuestions}`;
+    document.getElementById("checkAnswersBtn").style.display = 'none';
+    uncheckAllRadioButtons();
 });
 
 function uncheckAllRadioButtons() {
-    // Select all radio buttons within the questions container
     const radioButtons = document.querySelectorAll('input[type="radio"]');
-    
-    // Loop through each radio button and uncheck it
-    radioButtons.forEach(radio => {
-        radio.checked = false;
-    });
+    radioButtons.forEach(radio => radio.checked = false);
 }
 
