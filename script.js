@@ -45,9 +45,6 @@ document.getElementById('generateBtn').addEventListener('click', function () {
     resultsSection.style.display = 'none';
     document.getElementById("submitbtn").style.display = 'block';
     document.getElementById("checkAnswersBtn").style.display = 'none';
-
-    // Smooth scroll to OMR section
-    omrSection.scrollIntoView({ behavior: 'smooth' });
 });
 
 document.getElementById('omrForm').addEventListener('submit', function (event) {
@@ -68,11 +65,10 @@ document.getElementById('omrForm').addEventListener('submit', function (event) {
         selectedAnswers.push(answer ? answer.value : null);
     }
 
-    // Show results section briefly to indicate submission
+    // Show results section
     const resultsSection = document.getElementById('results');
     resultsSection.style.display = 'block';
-    document.getElementById('score').innerText = "Submitted! Now check the answers.";
-    resultsSection.scrollIntoView({ behavior: 'smooth' });
+    document.getElementById('score').innerText = "Submitted!";
 });
 
 document.getElementById('checkAnswersBtn').addEventListener('click', function () {
