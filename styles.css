@@ -186,11 +186,25 @@ input[type="number"] {
     font-size: 1rem;
     outline: none;
     transition: all 0.2s;
+    color-scheme: dark;
+    /* Ensures browser UI like arrows are dark */
 }
 
 input[type="number"]:focus {
     border-color: var(--primary);
     background: rgba(255, 255, 255, 0.1);
+}
+
+/* Professional styling for spin buttons */
+input[type="number"]::-webkit-inner-spin-button {
+    opacity: 0.5;
+    cursor: pointer;
+    transition: opacity 0.2s;
+}
+
+input[type="number"]:hover::-webkit-inner-spin-button,
+input[type="number"]:focus::-webkit-inner-spin-button {
+    opacity: 1;
 }
 
 .primary-btn,

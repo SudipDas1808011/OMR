@@ -118,8 +118,19 @@ document.getElementById('checkAnswersBtn').addEventListener('click', function ()
     uncheckAllRadioButtons();
 });
 
-function uncheckAllRadioButtons() {
-    const radioButtons = document.querySelectorAll('input[type="radio"]');
-    radioButtons.forEach(radio => radio.checked = false);
-}
+// Add scroll-to-change functionality for number inputs
+[document.getElementById('startNumber'), document.getElementById('lastNumber')].forEach(input => {
+    input.addEventListener('wheel', function (e) {
+        if (document.activeElement === input) {
+            e.preventDefault();
+            const step = parseInt(input.step) || 1;
+            if (e.deltaY < 0) {
+                input.value = parseInt(input.value || 0) + step;
+            } else {
+                input.value = Math.max(parseInt(input.getAttribute('min') || 0), parseInt(input.value || 0) - step);
+            }
+            // Trigger any calculation or validation if needed
+        }
+    }, { passive: false });
+});
 
