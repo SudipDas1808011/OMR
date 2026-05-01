@@ -3,265 +3,257 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Premium Dual-Entry OMR</title>
+    <title>Professional OMR Evaluator</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
     <style>
         :root {
-            --primary: #6366f1;
-            --accent: #f43f5e;
-            --bg-dark: #0f172a;
-            --card-bg: rgba(255, 255, 255, 0.05);
-            --glass-border: rgba(255, 255, 255, 0.1);
-            --text-main: #f8fafc;
-            --text-dim: #94a3b8;
+            --primary: #3b82f6;
+            --key-color: #f59e0b;
+            --bg: #0f172a;
+            --card: #1e293b;
+            --text: #f8fafc;
+            --border: #334155;
             --success: #10b981;
         }
 
         * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text); }
 
-        body {
-            font-family: 'Inter', sans-serif;
-            background-color: var(--bg-dark);
-            color: var(--text-main);
-            min-height: 100vh;
-            line-height: 1.6;
+        .container { max-width: 900px; margin: 0 auto; padding: 20px; }
+
+        /* Configuration Card */
+        .setup-card {
+            background: var(--card);
+            padding: 25px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+            border: 1px solid var(--border);
+            text-align: center;
         }
 
-        .background-blobs {
-            position: fixed;
-            top: 0; left: 0; width: 100%; height: 100%;
-            z-index: -1;
-            filter: blur(80px);
-            opacity: 0.2;
-        }
-        .blob { position: absolute; border-radius: 50%; width: 400px; height: 400px; }
-        .blob-1 { background: #4f46e5; top: -100px; right: -100px; }
-        .blob-2 { background: #7c3aed; bottom: -100px; left: -100px; }
-
-        .app-layout {
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 2rem 1rem;
-        }
-
-        .header-section { text-align: center; margin-bottom: 2rem; }
-        .header-section h1 { font-size: 2rem; background: linear-gradient(to right, #818cf8, #c084fc); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
-
-        .config-bar {
-            background: var(--card-bg);
-            backdrop-filter: blur(10px);
-            border: 1px solid var(--glass-border);
-            padding: 1.5rem;
-            border-radius: 1rem;
-            display: flex;
-            flex-wrap: wrap;
-            gap: 1.5rem;
-            align-items: flex-end;
-            justify-content: center;
-            margin-bottom: 2rem;
-        }
-
-        .input-group label { display: block; font-size: 0.75rem; color: var(--text-dim); text-transform: uppercase; margin-bottom: 0.5rem; font-weight: 600; }
-        input[type="number"] {
-            background: rgba(0,0,0,0.3);
-            border: 1px solid var(--glass-border);
-            padding: 0.75rem;
-            border-radius: 0.5rem;
+        .input-row { display: flex; gap: 15px; justify-content: center; margin: 15px 0; }
+        .input-group { text-align: left; }
+        .input-group label { display: block; font-size: 12px; color: #94a3b8; margin-bottom: 5px; font-weight: 600; }
+        
+        input {
+            background: #0f172a;
+            border: 1px solid var(--border);
+            padding: 10px;
             color: white;
-            width: 120px;
+            border-radius: 6px;
+            width: 100px;
         }
 
         .btn {
             background: var(--primary);
             color: white;
             border: none;
-            padding: 0.75rem 1.5rem;
-            border-radius: 0.5rem;
+            padding: 12px 24px;
+            border-radius: 8px;
             font-weight: 600;
             cursor: pointer;
-            transition: 0.3s;
-        }
-        .btn:hover { opacity: 0.9; transform: translateY(-2px); }
-
-        /* OMR Table Styling */
-        .omr-container {
-            background: var(--card-bg);
-            border: 1px solid var(--glass-border);
-            border-radius: 1rem;
-            padding: 1.5rem;
-            overflow-x: auto;
-        }
-
-        table { width: 100%; border-collapse: collapse; min-width: 600px; }
-        th { text-align: left; padding: 1rem; color: var(--text-dim); font-size: 0.8rem; text-transform: uppercase; border-bottom: 1px solid var(--glass-border); }
-        td { padding: 1rem; border-bottom: 1px solid rgba(255,255,255,0.02); }
-
-        .q-number { font-weight: 800; color: var(--primary); font-size: 1.1rem; }
-
-        .bubble-group { display: flex; gap: 0.5rem; }
-        .bubble {
-            position: relative;
-            width: 32px;
-            height: 32px;
-            cursor: pointer;
-        }
-        .bubble input { position: absolute; opacity: 0; }
-        .bubble span {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            width: 100%;
-            height: 100%;
-            border: 2px solid var(--primary);
-            border-radius: 50%;
-            font-size: 0.7rem;
-            font-weight: 700;
             transition: 0.2s;
         }
 
-        /* Color coding for distinguishing types */
-        .correct-answer-row .bubble span { border-color: var(--accent); color: var(--accent); }
-        
-        .bubble input:checked + span { background: var(--primary); color: white; border-color: var(--primary); }
-        .correct-answer-row .bubble input:checked + span { background: var(--accent); color: white; border-color: var(--accent); }
-
-        .results-overlay {
+        /* The Sheet Layout */
+        .omr-sheet {
+            background: var(--card);
+            border-radius: 12px;
+            border: 1px solid var(--border);
+            overflow: hidden; /* Important for header radius */
             display: none;
-            text-align: center;
-            margin-top: 2rem;
-            padding: 2rem;
+        }
+
+        /* STICKY HEADER - Fixes your tracking problem */
+        .sheet-header {
+            position: sticky;
+            top: 0;
+            background: #1e293b;
+            display: grid;
+            grid-template-columns: 80px 1fr 1fr;
+            padding: 15px;
+            border-bottom: 2px solid var(--border);
+            z-index: 100;
+            font-weight: 800;
+            font-size: 14px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3);
+        }
+
+        .row {
+            display: grid;
+            grid-template-columns: 80px 1fr 1fr;
+            padding: 15px;
+            align-items: center;
+            border-bottom: 1px solid var(--border);
+        }
+
+        /* Zebra Striping for easy eye tracking */
+        .row:nth-child(even) { background: rgba(255, 255, 255, 0.03); }
+
+        .q-num { font-weight: 800; color: #64748b; font-size: 18px; }
+
+        .bubble-box { display: flex; gap: 8px; justify-content: center; }
+
+        /* Bubble Styling */
+        .bubble { position: relative; width: 36px; height: 36px; }
+        .bubble input { position: absolute; opacity: 0; cursor: pointer; width: 100%; height: 100%; z-index: 2; }
+        .bubble span {
+            position: absolute;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            border: 2px solid;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            font-size: 12px;
+            transition: 0.2s;
+        }
+
+        /* Your Choice Bubbles (Blue) */
+        .user-col span { border-color: var(--primary); color: var(--primary); }
+        .user-col input:checked + span { background: var(--primary); color: white; }
+
+        /* Correct Key Bubbles (Amber) */
+        .key-col span { border-color: var(--key-color); color: var(--key-color); }
+        .key-col input:checked + span { background: var(--key-color); color: white; }
+
+        /* Result Section */
+        .footer-actions { padding: 30px; text-align: center; }
+        #resultDisplay {
+            margin-top: 20px;
+            padding: 20px;
+            border-radius: 10px;
             background: rgba(16, 185, 129, 0.1);
             border: 1px solid var(--success);
-            border-radius: 1rem;
+            display: none;
         }
-        .score-val { font-size: 3rem; font-weight: 800; color: var(--success); }
 
-        .hidden { display: none; }
+        @media (max-width: 600px) {
+            .sheet-header, .row { grid-template-columns: 50px 1fr 1fr; padding: 10px 5px; }
+            .bubble { width: 30px; height: 30px; }
+            .bubble-box { gap: 4px; }
+        }
     </style>
 </head>
 <body>
 
-    <div class="background-blobs">
-        <div class="blob blob-1"></div>
-        <div class="blob blob-2"></div>
-    </div>
+    <div class="container">
+        <header style="text-align: center; margin-bottom: 30px;">
+            <h1 style="font-size: 2.5rem; margin-bottom: 10px;">OMR Evaluator</h1>
+            <p style="color: #94a3b8;">Fill your choices and the correct key to calculate marks.</p>
+        </header>
 
-    <div class="app-layout">
-        <div class="header-section">
-            <h1>Premium OMR Evaluator</h1>
-            <p style="color: var(--text-dim)">Generate, Input, and Compare Instantly</p>
-        </div>
-
-        <section class="config-bar">
-            <div class="input-group">
-                <label>Starting No.</label>
-                <input type="number" id="startNo" value="1">
+        <section class="setup-card">
+            <div class="input-row">
+                <div class="input-group">
+                    <label>Start No.</label>
+                    <input type="number" id="startNo" value="1">
+                </div>
+                <div class="input-group">
+                    <label>Total Questions</label>
+                    <input type="number" id="totalQty" value="10">
+                </div>
             </div>
-            <div class="input-group">
-                <label>Total Questions</label>
-                <input type="number" id="totalQty" placeholder="e.g. 10">
-            </div>
-            <button class="btn" onclick="generateOMR()">Generate Sheet</button>
+            <button class="btn" onclick="generateSheet()">Generate OMR Sheet</button>
         </section>
 
-        <section id="omrWrapper" class="hidden">
-            <form id="evaluationForm">
-                <div class="omr-container">
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>#</th>
-                                <th>Your Choice (Selection)</th>
-                                <th>Correct Answer (Key)</th>
-                            </tr>
-                        </thead>
-                        <tbody id="omrBody"></tbody>
-                    </table>
+        <form id="omrForm">
+            <div id="omrSheet" class="omr-sheet">
+                <div class="sheet-header">
+                    <div>No.</div>
+                    <div style="text-align: center; color: var(--primary);">Your Choice</div>
+                    <div style="text-align: center; color: var(--key-color);">Correct Key</div>
                 </div>
-                <div style="margin-top: 2rem; text-align: center;">
-                    <button type="submit" class="btn" style="background: var(--success); padding: 1rem 3rem;">Calculate Result</button>
+                <div id="questionsContainer"></div>
+                
+                <div class="footer-actions">
+                    <button type="submit" class="btn" style="background: var(--success); font-size: 18px; width: 250px;">Calculate Result</button>
+                    
+                    <div id="resultDisplay">
+                        <h2 id="finalScore" style="font-size: 40px; color: var(--success);">0 / 0</h2>
+                        <p id="accuracy" style="color: #94a3b8; font-weight: 600;"></p>
+                        <button type="button" class="btn" style="margin-top: 15px; background: #475569;" onclick="window.location.reload()">Reset Sheet</button>
+                    </div>
                 </div>
-            </form>
-
-            <div id="resultSection" class="results-overlay">
-                <p>Evaluation Complete</p>
-                <div class="score-val" id="finalScore">0 / 0</div>
-                <p id="accuracyText" style="color: var(--text-dim)"></p>
-                <button class="btn" style="margin-top: 1rem; background: transparent; border: 1px solid var(--text-dim);" onclick="location.reload()">Reset All</button>
             </div>
-        </section>
+        </form>
     </div>
 
     <script>
-        function generateOMR() {
+        function generateSheet() {
             const start = parseInt(document.getElementById('startNo').value) || 1;
             const qty = parseInt(document.getElementById('totalQty').value);
-            const tbody = document.getElementById('omrBody');
+            const container = document.getElementById('questionsContainer');
 
-            if (!qty) return alert("Please enter the total number of questions.");
+            if (!qty || qty < 1) return alert("Please enter total questions");
 
-            tbody.innerHTML = '';
-            for (let i = start; i < (start + qty); i++) {
-                const row = document.createElement('tr');
+            container.innerHTML = '';
+            for (let i = 0; i < qty; i++) {
+                const qNum = start + i;
+                const row = document.createElement('div');
+                row.className = 'row';
                 
                 row.innerHTML = `
-                    <td><span class="q-number">${i}</span></td>
-                    <td>
-                        <div class="bubble-group">
-                            ${['A','B','C','D'].map(opt => `
-                                <label class="bubble">
-                                    <input type="radio" name="user_q${i}" value="${opt}" required>
-                                    <span>${opt}</span>
-                                </label>
-                            `).join('')}
-                        </div>
-                    </td>
-                    <td class="correct-answer-row">
-                        <div class="bubble-group">
-                            ${['A','B','C','D'].map(opt => `
-                                <label class="bubble">
-                                    <input type="radio" name="key_q${i}" value="${opt}" required>
-                                    <span>${opt}</span>
-                                </label>
-                            `).join('')}
-                        </div>
-                    </td>
+                    <div class="q-num">${qNum}</div>
+                    <div class="bubble-box user-col">
+                        ${['A', 'B', 'C', 'D'].map(opt => `
+                            <label class="bubble">
+                                <input type="radio" name="u_${qNum}" value="${opt}" required>
+                                <span>${opt}</span>
+                            </label>
+                        `).join('')}
+                    </div>
+                    <div class="bubble-box key-col">
+                        ${['A', 'B', 'C', 'D'].map(opt => `
+                            <label class="bubble">
+                                <input type="radio" name="k_${qNum}" value="${opt}" required>
+                                <span>${opt}</span>
+                            </label>
+                        `).join('')}
+                    </div>
                 `;
-                tbody.appendChild(row);
+                container.appendChild(row);
             }
 
-            document.getElementById('omrWrapper').classList.remove('hidden');
-            window.scrollTo({ top: document.getElementById('omrWrapper').offsetTop - 50, behavior: 'smooth' });
+            document.getElementById('omrSheet').style.display = 'block';
+            document.querySelector('.setup-card').style.display = 'none';
         }
 
-        document.getElementById('evaluationForm').onsubmit = function(e) {
+        document.getElementById('omrForm').addEventListener('submit', function(e) {
             e.preventDefault();
             const formData = new FormData(this);
             const data = Object.fromEntries(formData.entries());
             
-            let total = 0;
             let correct = 0;
+            let total = 0;
 
-            // Loop through questions to compare user vs key
-            for (let key in data) {
-                if (key.startsWith('user_')) {
-                    total++;
-                    const qNum = key.replace('user_', '');
-                    if (data[key] === data['key_' + qNum]) {
-                        correct++;
-                    }
+            // Using a Map-like approach to find pairs
+            const results = {};
+            for (let [key, value] of Object.entries(data)) {
+                const [type, num] = key.split('_');
+                if (!results[num]) results[num] = {};
+                results[num][type] = value;
+            }
+
+            for (let num in results) {
+                total++;
+                if (results[num].u === results[num].k) {
+                    correct++;
                 }
             }
 
-            const resultDiv = document.getElementById('resultSection');
+            const resDiv = document.getElementById('resultDisplay');
             document.getElementById('finalScore').textContent = `${correct} / ${total}`;
-            document.getElementById('accuracyText').textContent = `Accuracy Rate: ${Math.round((correct/total)*100)}%`;
-            
-            resultDiv.style.display = 'block';
-            resultDiv.scrollIntoView({ behavior: 'smooth' });
-        };
+            document.getElementById('accuracy').textContent = `Accuracy: ${Math.round((correct/total)*100)}%`;
+            resDiv.style.display = 'block';
+            resDiv.scrollIntoView({ behavior: 'smooth' });
+        });
     </script>
 </body>
 </html>
