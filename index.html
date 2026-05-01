@@ -1,76 +1,289 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Premium OMR System</title>
-    <link rel="icon" href="favicon.ico" type="image/x-icon">
+    <title>Dynamic OMR System</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="styles.css">
-</head>
+    <style>
+        :root {
+            --primary: #6366f1;
+            --primary-hover: #4f46e5;
+            --bg-dark: #0f172a;
+            --card-bg: rgba(255, 255, 255, 0.05);
+            --glass-border: rgba(255, 255, 255, 0.1);
+            --text-main: #f8fafc;
+            --text-dim: #94a3b8;
+            --success: #10b981;
+        }
 
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-dark);
+            color: var(--text-main);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        /* Animated Background */
+        .background-blobs {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            z-index: -1;
+            filter: blur(80px);
+            opacity: 0.3;
+        }
+        .blob { position: absolute; border-radius: 50%; }
+        .blob-1 { width: 400px; height: 400px; background: #4f46e5; top: -100px; right: -100px; }
+        .blob-2 { width: 300px; height: 300px; background: #7c3aed; bottom: -50px; left: -50px; }
+
+        /* Main Layout */
+        .app-layout {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 1.5rem;
+            padding: 1rem;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        @media (min-width: 1024px) {
+            .app-layout {
+                grid-template-columns: 350px 1fr;
+                height: 100vh;
+                padding: 2rem;
+            }
+            .sidebar { overflow-y: auto; padding-right: 1rem; }
+            .content { overflow-y: auto; }
+        }
+
+        /* Sidebar & Cards */
+        .sidebar { display: flex; flex-direction: column; gap: 1.5rem; }
+        
+        .card {
+            background: var(--card-bg);
+            backdrop-filter: blur(15px);
+            border: 1px solid var(--glass-border);
+            border-radius: 1.25rem;
+            padding: 1.5rem;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+        }
+
+        h1 { font-size: 1.5rem; margin-bottom: 0.25rem; color: #fff; }
+        .subtitle { color: var(--text-dim); font-size: 0.85rem; margin-bottom: 1.5rem; }
+
+        .input-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1.25rem; }
+        .input-group label { display: block; font-size: 0.7rem; color: var(--text-dim); text-transform: uppercase; margin-bottom: 0.5rem; font-weight: 600; }
+        
+        input[type="number"] {
+            width: 100%;
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid var(--glass-border);
+            border-radius: 0.6rem;
+            padding: 0.8rem;
+            color: #fff;
+            font-size: 1rem;
+        }
+
+        .primary-btn, .submit-btn {
+            width: 100%;
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 1rem;
+            border-radius: 0.75rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s, background 0.2s;
+        }
+        .primary-btn:hover { background: var(--primary-hover); transform: translateY(-2px); }
+
+        /* Results Styling */
+        .stats-container { text-align: center; margin-top: 1rem; }
+        .stat-value { font-size: 2.5rem; font-weight: 800; color: var(--success); display: block; }
+        .stat-label { color: var(--text-dim); font-size: 0.9rem; }
+
+        /* Question Grid */
+        .questions-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 1rem;
+            margin-top: 1.5rem;
+        }
+
+        .question-item {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid var(--glass-border);
+            padding: 1rem;
+            border-radius: 0.75rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .q-num { font-weight: 700; color: var(--text-dim); min-width: 30px; }
+
+        .options-group { display: flex; gap: 0.75rem; }
+
+        /* OMR Bubbles */
+        .omr-bubble {
+            position: relative;
+            width: 34px;
+            height: 34px;
+            cursor: pointer;
+        }
+
+        .omr-bubble input {
+            opacity: 0;
+            position: absolute;
+        }
+
+        .omr-bubble span {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+            height: 100%;
+            border: 2px solid var(--primary);
+            border-radius: 50%;
+            font-size: 0.8rem;
+            font-weight: 600;
+            transition: all 0.2s;
+        }
+
+        .omr-bubble input:checked + span {
+            background: var(--primary);
+            color: white;
+            box-shadow: 0 0 12px var(--primary);
+        }
+
+        .hidden { display: none !important; }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-thumb { background: var(--glass-border); border-radius: 10px; }
+    </style>
+</head>
 <body>
+
     <div class="background-blobs">
         <div class="blob blob-1"></div>
         <div class="blob blob-2"></div>
-        <div class="blob blob-3"></div>
     </div>
 
     <div class="app-layout">
         <aside class="sidebar">
-            <header>
-                <h1>Dynamic OMR</h1>
-                <p class="subtitle">Smart Evaluation System</p>
-            </header>
+            <div class="card">
+                <header>
+                    <h1>Dynamic OMR</h1>
+                    <p class="subtitle">Smart Evaluation System</p>
+                </header>
 
-            <section class="config-card">
                 <div class="input-grid">
                     <div class="input-group">
-                        <label for="startNumber">Starting No.</label>
+                        <label>Start No.</label>
                         <input type="number" id="startNumber" value="1" min="1">
                     </div>
                     <div class="input-group">
-                        <label for="lastNumber">Last No.</label>
-                        <input type="number" id="lastNumber" min="1">
+                        <label>Total Questions</label>
+                        <input type="number" id="lastNumber" placeholder="e.g. 50">
                     </div>
                 </div>
-                <button id="generateBtn" class="primary-btn">Generate OMR Sheet</button>
-            </section>
+                <button id="generateBtn" class="primary-btn">Generate Sheet</button>
+            </div>
 
-            <section id="results" class="results-card" style="display: none;">
-                <div class="results-header">
-                    <h2>Results</h2>
-                </div>
+            <div id="results" class="card hidden">
+                <h2>Evaluation</h2>
                 <div class="stats-container">
-                    <div class="stat-item">
-                        <span class="stat-label">Final Score</span>
-                        <span id="score" class="stat-value">0</span>
-                    </div>
+                    <span id="score" class="stat-value">0</span>
+                    <span class="stat-label">Correct Answers</span>
                 </div>
-                <div id="answersContainer"></div>
-            </section>
+            </div>
         </aside>
 
-        <main id="omrSection" class="content" style="display: none;">
-            <form id="omrForm">
-                <div class="form-header">
+        <main id="omrSection" class="content hidden">
+            <form id="omrForm" class="card">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
                     <h2>Examination Sheet</h2>
-                    <div class="badge">Active</div>
+                    <span style="background: var(--success); padding: 4px 12px; border-radius: 20px; font-size: 0.7rem; font-weight: 700;">LIVE</span>
                 </div>
-                <div id="questionsContainer" class="questions-grid"></div>
-                <div class="form-actions">
-                    <button type="submit" id="submitbtn" class="submit-btn">Submit Answers</button>
-                    <button type="button" id="checkAnswersBtn" class="check-btn" style="display: none;">Check
-                        Results</button>
+                
+                <div id="questionsContainer" class="questions-grid">
+                    </div>
+
+                <div style="margin-top: 2rem;">
+                    <button type="submit" class="submit-btn">Submit Examination</button>
                 </div>
             </form>
         </main>
     </div>
 
-    <script src="script.js"></script>
-</body>
+    <script>
+        const generateBtn = document.getElementById('generateBtn');
+        const omrSection = document.getElementById('omrSection');
+        const questionsContainer = document.getElementById('questionsContainer');
+        const omrForm = document.getElementById('omrForm');
+        const resultsCard = document.getElementById('results');
+        const scoreDisplay = document.getElementById('score');
 
+        generateBtn.addEventListener('click', () => {
+            const start = parseInt(document.getElementById('startNumber').value) || 1;
+            const count = parseInt(document.getElementById('lastNumber').value);
+
+            if (!count || count < 1) {
+                alert("Please enter the number of questions.");
+                return;
+            }
+
+            questionsContainer.innerHTML = '';
+            
+            // Loop to create questions
+            for (let i = start; i < (start + count); i++) {
+                const qDiv = document.createElement('div');
+                qDiv.className = 'question-item';
+                
+                let optionsHTML = `<span class="q-num">${i}.</span><div class="options-group">`;
+                
+                ['A', 'B', 'C', 'D'].forEach(opt => {
+                    optionsHTML += `
+                        <label class="omr-bubble">
+                            <input type="radio" name="q${i}" value="${opt}" required>
+                            <span>${opt}</span>
+                        </label>
+                    `;
+                });
+                
+                optionsHTML += `</div>`;
+                qDiv.innerHTML = optionsHTML;
+                questionsContainer.appendChild(qDiv);
+            }
+
+            omrSection.classList.remove('hidden');
+            resultsCard.classList.add('hidden');
+            
+            // Smooth scroll to questions on mobile
+            if(window.innerWidth < 1024) {
+                omrSection.scrollIntoView({ behavior: 'smooth' });
+            }
+        });
+
+        omrForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            const formData = new FormData(omrForm);
+            const answers = Array.from(formData.entries());
+
+            // Simple demo logic: 'B' is the correct answer for all
+            const correctCount = answers.filter(ans => ans[1] === 'B').length;
+            
+            scoreDisplay.textContent = `${correctCount} / ${answers.length}`;
+            resultsCard.classList.remove('hidden');
+            
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        });
+    </script>
+</body>
 </html>
