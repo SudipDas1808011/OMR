@@ -17,6 +17,7 @@
             --text-main: #f8fafc;
             --text-dim: #94a3b8;
             --success: #10b981;
+            --warning: #f59e0b;
         }
 
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -29,7 +30,7 @@
             overflow-x: hidden;
         }
 
-        /* Animated Background */
+        /* Background Blobs */
         .background-blobs {
             position: fixed;
             top: 0; left: 0; width: 100%; height: 100%;
@@ -41,7 +42,6 @@
         .blob-1 { width: 400px; height: 400px; background: #4f46e5; top: -100px; right: -100px; }
         .blob-2 { width: 300px; height: 300px; background: #7c3aed; bottom: -50px; left: -50px; }
 
-        /* Main Layout */
         .app-layout {
             display: grid;
             grid-template-columns: 1fr;
@@ -61,9 +61,6 @@
             .content { overflow-y: auto; }
         }
 
-        /* Sidebar & Cards */
-        .sidebar { display: flex; flex-direction: column; gap: 1.5rem; }
-        
         .card {
             background: var(--card-bg);
             backdrop-filter: blur(15px);
@@ -71,15 +68,16 @@
             border-radius: 1.25rem;
             padding: 1.5rem;
             box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+            margin-bottom: 1rem;
         }
 
-        h1 { font-size: 1.5rem; margin-bottom: 0.25rem; color: #fff; }
+        h1 { font-size: 1.5rem; color: #fff; }
         .subtitle { color: var(--text-dim); font-size: 0.85rem; margin-bottom: 1.5rem; }
 
         .input-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1.25rem; }
         .input-group label { display: block; font-size: 0.7rem; color: var(--text-dim); text-transform: uppercase; margin-bottom: 0.5rem; font-weight: 600; }
         
-        input[type="number"] {
+        input[type="number"], input[type="text"] {
             width: 100%;
             background: rgba(0, 0, 0, 0.3);
             border: 1px solid var(--glass-border);
@@ -98,16 +96,10 @@
             border-radius: 0.75rem;
             font-weight: 600;
             cursor: pointer;
-            transition: transform 0.2s, background 0.2s;
+            transition: 0.2s;
         }
-        .primary-btn:hover { background: var(--primary-hover); transform: translateY(-2px); }
+        .primary-btn:hover { background: var(--primary-hover); }
 
-        /* Results Styling */
-        .stats-container { text-align: center; margin-top: 1rem; }
-        .stat-value { font-size: 2.5rem; font-weight: 800; color: var(--success); display: block; }
-        .stat-label { color: var(--text-dim); font-size: 0.9rem; }
-
-        /* Question Grid */
         .questions-grid {
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
@@ -125,22 +117,16 @@
             justify-content: space-between;
         }
 
-        .q-num { font-weight: 700; color: var(--text-dim); min-width: 30px; }
+        .options-group { display: flex; gap: 0.5rem; }
 
-        .options-group { display: flex; gap: 0.75rem; }
-
-        /* OMR Bubbles */
         .omr-bubble {
             position: relative;
-            width: 34px;
-            height: 34px;
+            width: 32px;
+            height: 32px;
             cursor: pointer;
         }
 
-        .omr-bubble input {
-            opacity: 0;
-            position: absolute;
-        }
+        .omr-bubble input { opacity: 0; position: absolute; }
 
         .omr-bubble span {
             display: flex;
@@ -150,22 +136,19 @@
             height: 100%;
             border: 2px solid var(--primary);
             border-radius: 50%;
-            font-size: 0.8rem;
-            font-weight: 600;
-            transition: all 0.2s;
+            font-size: 0.75rem;
+            transition: 0.2s;
         }
 
         .omr-bubble input:checked + span {
             background: var(--primary);
             color: white;
-            box-shadow: 0 0 12px var(--primary);
         }
 
         .hidden { display: none !important; }
-
-        /* Custom Scrollbar */
-        ::-webkit-scrollbar { width: 6px; }
-        ::-webkit-scrollbar-thumb { background: var(--glass-border); border-radius: 10px; }
+        
+        #scoreBoard { text-align: center; }
+        .score-num { font-size: 3rem; font-weight: 800; color: var(--success); }
     </style>
 </head>
 <body>
@@ -178,46 +161,44 @@
     <div class="app-layout">
         <aside class="sidebar">
             <div class="card">
-                <header>
-                    <h1>Dynamic OMR</h1>
-                    <p class="subtitle">Smart Evaluation System</p>
-                </header>
-
+                <h1>Dynamic OMR</h1>
+                <p class="subtitle">Evaluate Your Performance</p>
                 <div class="input-grid">
                     <div class="input-group">
                         <label>Start No.</label>
-                        <input type="number" id="startNumber" value="1" min="1">
+                        <input type="number" id="startNumber" value="1">
                     </div>
                     <div class="input-group">
-                        <label>Total Questions</label>
-                        <input type="number" id="lastNumber" placeholder="e.g. 50">
+                        <label>Quantity</label>
+                        <input type="number" id="lastNumber" placeholder="Total Qs">
                     </div>
                 </div>
-                <button id="generateBtn" class="primary-btn">Generate Sheet</button>
+                <button id="generateBtn" class="primary-btn">1. Create Sheet</button>
+            </div>
+
+            <div id="answerKeyCard" class="card hidden">
+                <h3 style="margin-bottom: 0.5rem;">2. Define Key</h3>
+                <p class="subtitle">Enter correct answers (e.g., ABCD...)</p>
+                <input type="text" id="correctKey" placeholder="Sequence of answers">
+                <p style="font-size: 0.7rem; margin-top: 0.5rem; color: var(--warning);">Note: Submit your sheet first!</p>
             </div>
 
             <div id="results" class="card hidden">
-                <h2>Evaluation</h2>
-                <div class="stats-container">
-                    <span id="score" class="stat-value">0</span>
-                    <span class="stat-label">Correct Answers</span>
+                <div id="scoreBoard">
+                    <p class="subtitle">Your Result</p>
+                    <div class="score-num" id="score">0</div>
+                    <p id="accuracyText"></p>
                 </div>
             </div>
         </aside>
 
         <main id="omrSection" class="content hidden">
             <form id="omrForm" class="card">
-                <div style="display: flex; justify-content: space-between; align-items: center;">
-                    <h2>Examination Sheet</h2>
-                    <span style="background: var(--success); padding: 4px 12px; border-radius: 20px; font-size: 0.7rem; font-weight: 700;">LIVE</span>
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                    <h2>OMR Sheet</h2>
+                    <button type="submit" class="submit-btn" style="width: auto; padding: 0.5rem 1.5rem;">Submit Answers</button>
                 </div>
-                
-                <div id="questionsContainer" class="questions-grid">
-                    </div>
-
-                <div style="margin-top: 2rem;">
-                    <button type="submit" class="submit-btn">Submit Examination</button>
-                </div>
+                <div id="questionsContainer" class="questions-grid"></div>
             </form>
         </main>
     </div>
@@ -227,62 +208,58 @@
         const omrSection = document.getElementById('omrSection');
         const questionsContainer = document.getElementById('questionsContainer');
         const omrForm = document.getElementById('omrForm');
+        const answerKeyCard = document.getElementById('answerKeyCard');
         const resultsCard = document.getElementById('results');
-        const scoreDisplay = document.getElementById('score');
+        
+        let userChoices = {};
 
         generateBtn.addEventListener('click', () => {
             const start = parseInt(document.getElementById('startNumber').value) || 1;
             const count = parseInt(document.getElementById('lastNumber').value);
 
-            if (!count || count < 1) {
-                alert("Please enter the number of questions.");
-                return;
-            }
+            if (!count) return alert("Enter question quantity");
 
             questionsContainer.innerHTML = '';
-            
-            // Loop to create questions
             for (let i = start; i < (start + count); i++) {
                 const qDiv = document.createElement('div');
                 qDiv.className = 'question-item';
-                
-                let optionsHTML = `<span class="q-num">${i}.</span><div class="options-group">`;
-                
+                let html = `<span style="font-weight:bold">${i}.</span><div class="options-group">`;
                 ['A', 'B', 'C', 'D'].forEach(opt => {
-                    optionsHTML += `
-                        <label class="omr-bubble">
-                            <input type="radio" name="q${i}" value="${opt}" required>
-                            <span>${opt}</span>
-                        </label>
-                    `;
+                    html += `<label class="omr-bubble"><input type="radio" name="q${i}" value="${opt}" required><span>${opt}</span></label>`;
                 });
-                
-                optionsHTML += `</div>`;
-                qDiv.innerHTML = optionsHTML;
+                qDiv.innerHTML = html + `</div>`;
                 questionsContainer.appendChild(qDiv);
             }
 
             omrSection.classList.remove('hidden');
+            answerKeyCard.classList.add('hidden');
             resultsCard.classList.add('hidden');
-            
-            // Smooth scroll to questions on mobile
-            if(window.innerWidth < 1024) {
-                omrSection.scrollIntoView({ behavior: 'smooth' });
-            }
         });
 
         omrForm.addEventListener('submit', (e) => {
             e.preventDefault();
-            const formData = new FormData(omrForm);
-            const answers = Array.from(formData.entries());
+            const data = new FormData(omrForm);
+            userChoices = Object.fromEntries(data.entries());
+            
+            answerKeyCard.classList.remove('hidden');
+            alert("Choices recorded! Now enter the correct answer key in the sidebar to see results.");
+            answerKeyCard.scrollIntoView({behavior: 'smooth'});
+        });
 
-            // Simple demo logic: 'B' is the correct answer for all
-            const correctCount = answers.filter(ans => ans[1] === 'B').length;
+        document.getElementById('correctKey').addEventListener('input', function(e) {
+            const key = e.target.value.toUpperCase().replace(/\s/g, '');
+            const choicesArray = Object.values(userChoices);
             
-            scoreDisplay.textContent = `${correctCount} / ${answers.length}`;
-            resultsCard.classList.remove('hidden');
-            
-            window.scrollTo({ top: 0, behavior: 'smooth' });
+            if (key.length === choicesArray.length && choicesArray.length > 0) {
+                let correct = 0;
+                choicesArray.forEach((choice, index) => {
+                    if (choice === key[index]) correct++;
+                });
+
+                document.getElementById('score').textContent = `${correct} / ${choicesArray.length}`;
+                document.getElementById('accuracyText').textContent = `Accuracy: ${Math.round((correct/choicesArray.length)*100)}%`;
+                resultsCard.classList.remove('hidden');
+            }
         });
     </script>
 </body>
