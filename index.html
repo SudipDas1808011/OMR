@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Professional OMR Evaluator</title>
+    <title>OMR Evaluator - Flexible & Clear</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
@@ -16,14 +16,13 @@
             --text: #f8fafc;
             --border: #334155;
             --success: #10b981;
+            --error: #ef4444;
         }
 
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text); }
+        .container { max-width: 950px; margin: 0 auto; padding: 20px; }
 
-        .container { max-width: 900px; margin: 0 auto; padding: 20px; }
-
-        /* Configuration Card */
         .setup-card {
             background: var(--card);
             padding: 25px;
@@ -34,17 +33,7 @@
         }
 
         .input-row { display: flex; gap: 15px; justify-content: center; margin: 15px 0; }
-        .input-group { text-align: left; }
-        .input-group label { display: block; font-size: 12px; color: #94a3b8; margin-bottom: 5px; font-weight: 600; }
-        
-        input {
-            background: #0f172a;
-            border: 1px solid var(--border);
-            padding: 10px;
-            color: white;
-            border-radius: 6px;
-            width: 100px;
-        }
+        input[type="number"] { background: #0f172a; border: 1px solid var(--border); padding: 10px; color: white; border-radius: 6px; width: 100px; }
 
         .btn {
             background: var(--primary);
@@ -57,86 +46,79 @@
             transition: 0.2s;
         }
 
-        /* The Sheet Layout */
-        .omr-sheet {
-            background: var(--card);
-            border-radius: 12px;
-            border: 1px solid var(--border);
-            overflow: hidden; /* Important for header radius */
-            display: none;
-        }
+        .omr-sheet { background: var(--card); border-radius: 12px; border: 1px solid var(--border); overflow: hidden; display: none; }
 
-        /* STICKY HEADER - Fixes your tracking problem */
         .sheet-header {
             position: sticky;
             top: 0;
             background: #1e293b;
             display: grid;
-            grid-template-columns: 80px 1fr 1fr;
+            grid-template-columns: 100px 1fr 1fr;
             padding: 15px;
             border-bottom: 2px solid var(--border);
             z-index: 100;
             font-weight: 800;
-            font-size: 14px;
             text-transform: uppercase;
-            letter-spacing: 1px;
             box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3);
         }
 
         .row {
             display: grid;
-            grid-template-columns: 80px 1fr 1fr;
+            grid-template-columns: 100px 1fr 1fr;
             padding: 15px;
             align-items: center;
             border-bottom: 1px solid var(--border);
         }
 
-        /* Zebra Striping for easy eye tracking */
-        .row:nth-child(even) { background: rgba(255, 255, 255, 0.03); }
+        .row:nth-child(even) { background: rgba(255, 255, 255, 0.02); }
 
-        .q-num { font-weight: 800; color: #64748b; font-size: 18px; }
-
-        .bubble-box { display: flex; gap: 8px; justify-content: center; }
-
-        /* Bubble Styling */
-        .bubble { position: relative; width: 36px; height: 36px; }
-        .bubble input { position: absolute; opacity: 0; cursor: pointer; width: 100%; height: 100%; z-index: 2; }
-        .bubble span {
-            position: absolute;
-            top: 0; left: 0;
-            width: 100%; height: 100%;
-            border: 2px solid;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-weight: 600;
-            font-size: 12px;
-            transition: 0.2s;
+        /* Separator Line between Your Ans and Correct Key */
+        .user-col { 
+            padding-right: 30px; 
+            border-right: 1px solid var(--border); /* Vertical Divider */
+        }
+        .key-col { 
+            padding-left: 30px; 
         }
 
-        /* Your Choice Bubbles (Blue) */
+        .q-meta { display: flex; align-items: center; gap: 8px; }
+        .q-num { font-weight: 800; color: #64748b; font-size: 16px; min-width: 25px; }
+        .status-icon { font-size: 18px; font-weight: bold; }
+        .status-tick { color: var(--success); }
+        .status-cross { color: var(--error); }
+
+        .bubble-box { display: flex; gap: 10px; justify-content: center; }
+
+        .bubble { position: relative; width: 34px; height: 34px; }
+        .bubble input { position: absolute; opacity: 0; width: 100%; height: 100%; cursor: pointer; z-index: 2; }
+        .bubble span {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            border: 2px solid; border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            font-weight: 600; font-size: 12px; transition: 0.2s;
+        }
+
         .user-col span { border-color: var(--primary); color: var(--primary); }
         .user-col input:checked + span { background: var(--primary); color: white; }
 
-        /* Correct Key Bubbles (Amber) */
         .key-col span { border-color: var(--key-color); color: var(--key-color); }
         .key-col input:checked + span { background: var(--key-color); color: white; }
 
-        /* Result Section */
+        .row-wrong { background: rgba(239, 68, 68, 0.05) !important; }
+        .row-correct { background: rgba(16, 185, 129, 0.05) !important; }
+
         .footer-actions { padding: 30px; text-align: center; }
         #resultDisplay {
-            margin-top: 20px;
-            padding: 20px;
-            border-radius: 10px;
-            background: rgba(16, 185, 129, 0.1);
-            border: 1px solid var(--success);
+            margin-top: 20px; padding: 25px; border-radius: 10px;
+            background: rgba(16, 185, 129, 0.1); border: 1px solid var(--success);
             display: none;
         }
 
         @media (max-width: 600px) {
-            .sheet-header, .row { grid-template-columns: 50px 1fr 1fr; padding: 10px 5px; }
-            .bubble { width: 30px; height: 30px; }
+            .sheet-header, .row { grid-template-columns: 70px 1fr 1fr; padding: 10px 5px; }
+            .user-col { padding-right: 10px; }
+            .key-col { padding-left: 10px; }
+            .bubble { width: 28px; height: 28px; }
             .bubble-box { gap: 4px; }
         }
     </style>
@@ -145,18 +127,17 @@
 
     <div class="container">
         <header style="text-align: center; margin-bottom: 30px;">
-            <h1 style="font-size: 2.5rem; margin-bottom: 10px;">OMR Evaluator</h1>
-            <p style="color: #94a3b8;">Fill your choices and the correct key to calculate marks.</p>
+            <h1 style="font-size: 2rem;">OMR Evaluator</h1>
         </header>
 
         <section class="setup-card">
             <div class="input-row">
-                <div class="input-group">
-                    <label>Start No.</label>
+                <div style="text-align: left;">
+                    <label style="display:block; font-size:12px; color:#94a3b8; font-weight:600;">Starting No.</label>
                     <input type="number" id="startNo" value="1">
                 </div>
-                <div class="input-group">
-                    <label>Total Questions</label>
+                <div style="text-align: left;">
+                    <label style="display:block; font-size:12px; color:#94a3b8; font-weight:600;">Questions</label>
                     <input type="number" id="totalQty" value="10">
                 </div>
             </div>
@@ -167,18 +148,19 @@
             <div id="omrSheet" class="omr-sheet">
                 <div class="sheet-header">
                     <div>No.</div>
-                    <div style="text-align: center; color: var(--primary);">Your Choice</div>
+                    <div style="text-align: center; color: var(--primary);">Your Ans</div>
                     <div style="text-align: center; color: var(--key-color);">Correct Key</div>
                 </div>
                 <div id="questionsContainer"></div>
                 
                 <div class="footer-actions">
-                    <button type="submit" class="btn" style="background: var(--success); font-size: 18px; width: 250px;">Calculate Result</button>
+                    <button type="submit" class="btn" style="background: var(--success); width: 100%; max-width: 300px;">Check Result</button>
                     
                     <div id="resultDisplay">
+                        <p style="font-size: 14px; color: #94a3b8; margin-bottom: 5px;">Final Result</p>
                         <h2 id="finalScore" style="font-size: 40px; color: var(--success);">0 / 0</h2>
-                        <p id="accuracy" style="color: #94a3b8; font-weight: 600;"></p>
-                        <button type="button" class="btn" style="margin-top: 15px; background: #475569;" onclick="window.location.reload()">Reset Sheet</button>
+                        <p id="accuracyPercent" style="color: #94a3b8; margin-bottom: 20px;"></p>
+                        <button type="button" class="btn" style="background: #475569;" onclick="window.location.reload()">Reset Sheet</button>
                     </div>
                 </div>
             </div>
@@ -191,20 +173,24 @@
             const qty = parseInt(document.getElementById('totalQty').value);
             const container = document.getElementById('questionsContainer');
 
-            if (!qty || qty < 1) return alert("Please enter total questions");
+            if (!qty || qty < 1) return alert("Enter number of questions");
 
             container.innerHTML = '';
             for (let i = 0; i < qty; i++) {
                 const qNum = start + i;
                 const row = document.createElement('div');
                 row.className = 'row';
+                row.id = `row_${qNum}`;
                 
                 row.innerHTML = `
-                    <div class="q-num">${qNum}</div>
+                    <div class="q-meta">
+                        <span class="q-num">${qNum}.</span>
+                        <span id="status_${qNum}" class="status-icon"></span>
+                    </div>
                     <div class="bubble-box user-col">
                         ${['A', 'B', 'C', 'D'].map(opt => `
                             <label class="bubble">
-                                <input type="radio" name="u_${qNum}" value="${opt}" required>
+                                <input type="radio" name="u_${qNum}" value="${opt}">
                                 <span>${opt}</span>
                             </label>
                         `).join('')}
@@ -212,7 +198,7 @@
                     <div class="bubble-box key-col">
                         ${['A', 'B', 'C', 'D'].map(opt => `
                             <label class="bubble">
-                                <input type="radio" name="k_${qNum}" value="${opt}" required>
+                                <input type="radio" name="k_${qNum}" value="${opt}">
                                 <span>${opt}</span>
                             </label>
                         `).join('')}
@@ -230,29 +216,56 @@
             const formData = new FormData(this);
             const data = Object.fromEntries(formData.entries());
             
-            let correct = 0;
-            let total = 0;
-
-            // Using a Map-like approach to find pairs
             const results = {};
+            const qList = document.querySelectorAll('.row');
+            
+            // Collect all question numbers generated
+            qList.forEach(row => {
+                const id = row.id.split('_')[1];
+                results[id] = { u: null, k: null };
+            });
+
+            // Map the radio values to our result object
             for (let [key, value] of Object.entries(data)) {
                 const [type, num] = key.split('_');
-                if (!results[num]) results[num] = {};
-                results[num][type] = value;
+                if (results[num]) results[num][type] = value;
             }
 
+            let correctCount = 0;
+            let totalEvaluated = 0;
+
             for (let num in results) {
-                total++;
+                const statusSpan = document.getElementById(`status_${num}`);
+                const rowDiv = document.getElementById(`row_${num}`);
+                
+                // If neither side is filled, skip evaluation for this question
+                if (!results[num].u && !results[num].k) {
+                    statusSpan.innerHTML = '';
+                    rowDiv.className = 'row';
+                    continue; 
+                }
+
+                totalEvaluated++;
                 if (results[num].u === results[num].k) {
-                    correct++;
+                    correctCount++;
+                    statusSpan.innerHTML = '✔';
+                    statusSpan.className = 'status-icon status-tick';
+                    rowDiv.classList.add('row-correct');
+                    rowDiv.classList.remove('row-wrong');
+                } else {
+                    statusSpan.innerHTML = '✘';
+                    statusSpan.className = 'status-icon status-cross';
+                    rowDiv.classList.add('row-wrong');
+                    rowDiv.classList.remove('row-correct');
                 }
             }
 
-            const resDiv = document.getElementById('resultDisplay');
-            document.getElementById('finalScore').textContent = `${correct} / ${total}`;
-            document.getElementById('accuracy').textContent = `Accuracy: ${Math.round((correct/total)*100)}%`;
-            resDiv.style.display = 'block';
-            resDiv.scrollIntoView({ behavior: 'smooth' });
+            document.getElementById('finalScore').textContent = `${correctCount} / ${totalEvaluated}`;
+            const accuracy = totalEvaluated > 0 ? Math.round((correctCount / totalEvaluated) * 100) : 0;
+            document.getElementById('accuracyPercent').textContent = `Accuracy: ${accuracy}%`;
+            
+            document.getElementById('resultDisplay').style.display = 'block';
+            document.getElementById('resultDisplay').scrollIntoView({ behavior: 'smooth' });
         });
     </script>
 </body>
