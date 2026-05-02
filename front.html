@@ -1,92 +1,248 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <link rel="icon" type="image/png" href="https://upload.wikimedia.org/wikipedia/commons/b/b6/Home_icon_red-1.png">
   <meta charset="UTF-8">
-  <title>Make Life Easy</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Toolbox - Make Life Easy</title>
+  <link rel="icon" type="image/png" href="https://upload.wikimedia.org/wikipedia/commons/b/b6/Home_icon_red-1.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
   <style>
-    body {
+    :root {
+      --primary: #6366f1;
+      --secondary: #ec4899;
+      --accent: #8b5cf6;
+      --bg: #0f172a;
+      --card-bg: rgba(30, 41, 59, 0.7);
+      --text: #f8fafc;
+      --text-muted: #94a3b8;
+      --border: rgba(255, 255, 255, 0.1);
+      --glass: rgba(255, 255, 255, 0.05);
+    }
+
+    * {
       margin: 0;
-      font-family: 'Segoe UI', sans-serif;
-      background: linear-gradient(135deg, #1f1c2c, #928dab);
-      color: #fff;
+      padding: 0;
+      box-sizing: border-box;
+      font-family: 'Outfit', sans-serif;
+    }
+
+    body {
+      background-color: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
       display: flex;
       flex-direction: column;
       align-items: center;
-      min-height: 100vh;
+      overflow-x: hidden;
+      background-image: 
+        radial-gradient(circle at 10% 20%, rgba(99, 102, 241, 0.15) 0%, transparent 40%),
+        radial-gradient(circle at 90% 80%, rgba(236, 72, 153, 0.15) 0%, transparent 40%);
+      background-attachment: fixed;
+    }
+
+    /* Header Section */
+    header {
+      width: 100%;
+      max-width: 1200px;
+      padding: 40px 20px;
+      text-align: center;
+      animation: fadeIn 0.8s ease-out;
     }
 
     h1 {
-      margin: 20px;
-      font-size: 2.5rem;
-      text-shadow: 2px 2px 5px rgba(0,0,0,0.5);
+      font-size: 3rem;
+      font-weight: 800;
+      background: linear-gradient(to right, #fff, var(--primary), var(--secondary));
+      -webkit-background-clip: text;
+      background-clip: text;
+      -webkit-text-fill-color: transparent;
+      margin-bottom: 10px;
     }
 
-    .card-container {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
-      gap: 20px;
+    .subtitle {
+      color: var(--text-muted);
+      font-size: 1.1rem;
+      max-width: 600px;
+      margin: 0 auto 30px;
+    }
+
+    /* Search Bar */
+    .search-container {
+      width: 90%;
+      max-width: 600px;
+      margin-bottom: 40px;
+      position: relative;
+    }
+
+    #searchInput {
+      width: 100%;
+      padding: 15px 25px;
+      border-radius: 50px;
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      color: #fff;
+      font-size: 1rem;
+      outline: none;
+      backdrop-filter: blur(10px);
+      transition: all 0.3s;
+      box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.2);
+    }
+
+    #searchInput:focus {
+      border-color: var(--primary);
+      box-shadow: 0 0 15px rgba(99, 102, 241, 0.3);
+      transform: scale(1.02);
+    }
+
+    /* Sections */
+    section {
       width: 90%;
       max-width: 1200px;
-      margin-bottom: 50px;
+      margin-bottom: 60px;
+    }
+
+    section h2 {
+      font-size: 1.5rem;
+      margin-bottom: 25px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      color: var(--text);
+    }
+
+    section h2::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: linear-gradient(to right, var(--border), transparent);
+    }
+
+    /* Card Grid */
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 25px;
     }
 
     .card {
-      background: rgba(255,255,255,0.1);
-      border-radius: 15px;
-      padding: 20px;
-      text-align: center;
+      background: var(--card-bg);
+      backdrop-filter: blur(12px);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 25px;
+      transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
       cursor: pointer;
-      transition: transform 0.3s, box-shadow 0.3s;
-      backdrop-filter: blur(10px);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+      height: 100%;
+    }
+
+    .card::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; width: 100%; height: 100%;
+      background: linear-gradient(135deg, transparent, rgba(255,255,255,0.05));
+      pointer-events: none;
     }
 
     .card:hover {
       transform: translateY(-10px);
-      box-shadow: 0 10px 20px rgba(0,0,0,0.5);
+      border-color: var(--primary);
+      box-shadow: 0 20px 40px -10px rgba(0, 0, 0, 0.4);
     }
 
-    .card h2 {
-      font-size: 1.2rem;
+    .card-icon {
+      font-size: 3rem;
+      margin-bottom: 15px;
+      transition: transform 0.3s;
+    }
+
+    .card:hover .card-icon {
+      transform: scale(1.1);
+    }
+
+    .card h3 {
+      font-size: 1.25rem;
       margin-bottom: 10px;
-      color: #ffebcd;
+      color: #fff;
     }
 
+    .card p {
+      font-size: 0.9rem;
+      color: var(--text-muted);
+      line-height: 1.5;
+    }
+
+    .card-img {
+      width: 60px;
+      height: 60px;
+      margin-bottom: 15px;
+      object-fit: contain;
+    }
+
+    /* Custom Cards Section */
     .controls {
       display: flex;
       gap: 15px;
-      margin-bottom: 20px;
+      margin-top: 30px;
+      justify-content: center;
     }
 
     .btn {
-      padding: 10px 15px;
+      padding: 12px 24px;
       border: none;
-      border-radius: 5px;
-      background: #ff6b6b;
+      border-radius: 12px;
+      background: var(--primary);
       color: #fff;
+      font-weight: 600;
       cursor: pointer;
-      transition: background 0.3s;
+      transition: all 0.3s;
+      display: flex;
+      align-items: center;
+      gap: 8px;
     }
 
     .btn:hover {
-      background: #ff4757;
+      background: var(--primary-hover, #4f46e5);
+      transform: scale(1.05);
     }
 
-    .add-card {
+    .btn-secondary {
+      background: var(--glass);
+      border: 1px solid var(--border);
+    }
+
+    .add-card-btn {
+      width: 100%;
+      height: 100%;
+      min-height: 200px;
+      border: 2px dashed var(--border);
+      background: transparent;
       display: flex;
+      flex-direction: column;
       justify-content: center;
       align-items: center;
-      background: rgba(255,255,255,0.2);
-      border-radius: 50%;
-      width: 60px;
-      height: 60px;
-      font-size: 2rem;
+      color: var(--text-muted);
+      border-radius: 20px;
       cursor: pointer;
-      transition: background 0.3s;
+      transition: all 0.3s;
     }
 
-    .add-card:hover {
-      background: rgba(255,255,255,0.4);
+    .add-card-btn:hover {
+      background: var(--glass);
+      border-color: var(--primary);
+      color: var(--text);
+    }
+
+    .add-card-btn span {
+      font-size: 3rem;
+      margin-bottom: 10px;
     }
 
     /* Modal */
@@ -95,67 +251,171 @@
       position: fixed;
       top: 0; left: 0;
       width: 100%; height: 100%;
-      background: rgba(0,0,0,0.7);
+      background: rgba(0, 0, 0, 0.8);
+      backdrop-filter: blur(5px);
       justify-content: center;
       align-items: center;
+      z-index: 1000;
+      animation: fadeIn 0.3s;
     }
 
     .modal-content {
-      background: #2c2c54;
-      padding: 20px;
-      border-radius: 10px;
+      background: #1e293b;
+      padding: 40px;
+      border-radius: 24px;
+      border: 1px solid var(--border);
+      width: 90%;
+      max-width: 400px;
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+    }
+
+    .modal-content h2 {
+      margin-bottom: 20px;
       text-align: center;
-      width: 300px;
     }
 
     .modal-content input {
-      width: 90%;
-      padding: 10px;
-      margin: 10px 0;
-      border-radius: 5px;
-      border: none;
-    }
-
-    .modal-content button {
-      padding: 10px 20px;
-      border: none;
-      border-radius: 5px;
-      background: #ff6b6b;
+      width: 100%;
+      padding: 15px;
+      margin-bottom: 15px;
+      border-radius: 12px;
+      background: #0f172a;
+      border: 1px solid var(--border);
       color: #fff;
-      cursor: pointer;
-      transition: background 0.3s;
+      outline: none;
     }
 
-    .modal-content button:hover {
-      background: #ff4757;
+    .modal-content input:focus {
+      border-color: var(--primary);
+    }
+
+    .modal-actions {
+      display: flex;
+      gap: 10px;
+      margin-top: 10px;
+    }
+
+    .modal-actions button {
+      flex: 1;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    @media (max-width: 768px) {
+      h1 { font-size: 2.2rem; }
+      .grid { grid-template-columns: 1fr; }
     }
   </style>
 </head>
 <body>
-  <h1>🌐 Make Life Easy </h1>
+  <header>
+    <h1>🌐 Toolbox</h1>
+    <p class="subtitle">A collection of essential tools to make your daily tasks simpler and more efficient.</p>
+    
+    <div class="search-container">
+      <input type="text" id="searchInput" placeholder="Search for tools...">
+    </div>
+  </header>
 
-  <div class="controls">
-    <div class="add-card" id="addCard">+</div>
-    <button class="btn" id="exportBtn">Export</button>
-    <input type="file" id="importFile" style="display:none" />
-    <button class="btn" id="importBtn">Import</button>
-  </div>
+  <section id="mainTools">
+    <h2>Built-in Tools</h2>
+    <div class="grid">
+      <!-- OMR Evaluator -->
+      <div class="card" onclick="location.href='index.html'">
+        <div class="card-icon">📝</div>
+        <h3>OMR Evaluator</h3>
+        <p>Efficiently check and evaluate OMR sheets with accuracy and speed.</p>
+      </div>
 
-  <div class="card-container" id="cardContainer"></div>
+      <!-- Scientific Calculator -->
+      <div class="card" onclick="location.href='calc.html'">
+        <img src="assets/calc.png" class="card-img" alt="Calculator">
+        <h3>Calculator</h3>
+        <p>Advanced scientific calculator with history and memory functions.</p>
+      </div>
+
+      <!-- Private Chat -->
+      <div class="card" onclick="location.href='chat.html'">
+        <img src="assets/chat.png" class="card-img" alt="Chat">
+        <h3>Private Chat</h3>
+        <p>Secure, local-first chat application with JSON export/import capability.</p>
+      </div>
+
+      <!-- Flashcards -->
+      <div class="card" onclick="location.href='flashCard.html'">
+        <img src="assets/flashcard.png" class="card-img" alt="Flashcards">
+        <h3>Flashcards</h3>
+        <p>Interactive study aid to help you memorize and learn faster.</p>
+      </div>
+
+      <!-- Pro Draw -->
+      <div class="card" onclick="location.href='painting.html'">
+        <img src="assets/drawing.png" class="card-img" alt="Pro Draw">
+        <h3>Pro Draw</h3>
+        <p>Modern canvas for digital painting and sketching with dark mode support.</p>
+      </div>
+
+      <!-- Infinite Drawing -->
+      <div class="card" onclick="location.href='infiniteDrawing.html'">
+        <img src="assets/infinity.png" class="card-img" alt="Infinite Drawing">
+        <h3>Infinite Scroll</h3>
+        <p>Never-ending canvas for long-form notes and brainstorming.</p>
+      </div>
+
+      <!-- Wiki Reader -->
+      <div class="card" onclick="location.href='myWiki.html'">
+        <div class="card-icon">📖</div>
+        <h3>Wiki Reader</h3>
+        <p>Reader-friendly Wikipedia interface with custom themes and font settings.</p>
+      </div>
+
+      <!-- Drawable Flashcards -->
+      <div class="card" onclick="location.href='flashcarddraw.html'">
+        <div class="card-icon">✍️</div>
+        <h3>Draw Cards</h3>
+        <p>Combine flashcards with drawing for a more visual learning experience.</p>
+      </div>
+
+      <!-- Combined OMR -->
+      <div class="card" onclick="location.href='combinedOMR.html'">
+        <div class="card-icon">📊</div>
+        <h3>Combined OMR</h3>
+        <p>Analyze multiple OMR results and generate comprehensive reports.</p>
+      </div>
+    </div>
+  </section>
+
+  <section id="customCards">
+    <h2>My Custom Bookmarks</h2>
+    <div class="grid" id="cardContainer">
+      <!-- Dynamic cards will be added here -->
+    </div>
+    
+    <div class="controls">
+      <button class="btn btn-secondary" id="exportBtn">Export JSON</button>
+      <button class="btn btn-secondary" id="importBtn">Import JSON</button>
+      <input type="file" id="importFile" style="display:none" />
+    </div>
+  </section>
 
   <!-- Modal -->
   <div class="modal" id="modal">
     <div class="modal-content">
-      <h2>Add New Card</h2>
-      <input type="text" id="cardTitle" placeholder="Enter Title">
-      <input type="text" id="cardURL" placeholder="Enter URL">
-      <button id="saveCard">Save</button>
+      <h2>Add New Bookmark</h2>
+      <input type="text" id="cardTitle" placeholder="Tool Name">
+      <input type="text" id="cardURL" placeholder="https://...">
+      <div class="modal-actions">
+        <button class="btn" id="saveCard">Save Bookmark</button>
+        <button class="btn btn-secondary" onclick="closeModal()">Cancel</button>
+      </div>
     </div>
   </div>
 
   <script>
     const cardContainer = document.getElementById('cardContainer');
-    const addCardBtn = document.getElementById('addCard');
     const modal = document.getElementById('modal');
     const saveCardBtn = document.getElementById('saveCard');
     const cardTitleInput = document.getElementById('cardTitle');
@@ -163,6 +423,7 @@
     const exportBtn = document.getElementById('exportBtn');
     const importBtn = document.getElementById('importBtn');
     const importFile = document.getElementById('importFile');
+    const searchInput = document.getElementById('searchInput');
 
     // Load saved cards
     let cards = JSON.parse(localStorage.getItem('cards')) || [];
@@ -170,39 +431,65 @@
     function renderCards() {
       // Sort alphabetically by title
       cards.sort((a, b) => a.title.localeCompare(b.title));
+      
       cardContainer.innerHTML = '';
-      cards.forEach((card) => {
+      
+      // Add "Add New" button first
+      const addBtn = document.createElement('div');
+      addBtn.className = 'add-card-btn';
+      addBtn.innerHTML = '<span>+</span><p>Add Bookmark</p>';
+      addBtn.onclick = openModal;
+      cardContainer.appendChild(addBtn);
+
+      cards.forEach((card, index) => {
         const cardDiv = document.createElement('div');
-        cardDiv.className = 'card';
-        cardDiv.innerHTML = `<h2>${card.title}</h2>`;
+        cardDiv.className = 'card custom-card';
+        cardDiv.innerHTML = `
+          <div class="card-icon">🔗</div>
+          <h3>${card.title}</h3>
+          <p>${new URL(card.url).hostname}</p>
+          <button class="delete-btn" onclick="deleteCard(${index}, event)" style="position:absolute; top:10px; right:10px; background:none; border:none; color:rgba(255,255,255,0.2); cursor:pointer; font-size:1.2rem;">×</button>
+        `;
         cardDiv.onclick = () => window.open(card.url, '_blank');
         cardContainer.appendChild(cardDiv);
       });
     }
 
-    renderCards();
-
-    addCardBtn.onclick = () => {
+    function openModal() {
       modal.style.display = 'flex';
-    };
+      cardTitleInput.focus();
+    }
+
+    function closeModal() {
+      modal.style.display = 'none';
+      cardTitleInput.value = '';
+      cardURLInput.value = '';
+    }
+
+    function deleteCard(index, event) {
+      event.stopPropagation();
+      if(confirm('Delete this bookmark?')) {
+        cards.splice(index, 1);
+        localStorage.setItem('cards', JSON.stringify(cards));
+        renderCards();
+      }
+    }
 
     saveCardBtn.onclick = () => {
       const title = cardTitleInput.value.trim();
-      const url = cardURLInput.value.trim();
+      let url = cardURLInput.value.trim();
+      
       if(title && url) {
+        if (!url.startsWith('http')) url = 'https://' + url;
         cards.push({title, url});
         localStorage.setItem('cards', JSON.stringify(cards));
         renderCards();
-        cardTitleInput.value = '';
-        cardURLInput.value = '';
-        modal.style.display = 'none';
+        closeModal();
       }
     };
 
     window.onclick = (e) => {
-      if(e.target === modal) {
-        modal.style.display = 'none';
-      }
+      if(e.target === modal) closeModal();
     };
 
     // Export cards
@@ -210,7 +497,7 @@
       const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(cards));
       const dlAnchor = document.createElement('a');
       dlAnchor.setAttribute("href", dataStr);
-      dlAnchor.setAttribute("download", "cards.json");
+      dlAnchor.setAttribute("download", "my_toolbox_bookmarks.json");
       dlAnchor.click();
     };
 
@@ -238,6 +525,24 @@
         reader.readAsText(file);
       }
     };
+
+    // Search functionality
+    searchInput.oninput = () => {
+      const query = searchInput.value.toLowerCase();
+      const allCards = document.querySelectorAll('.card');
+      
+      allCards.forEach(card => {
+        const titleText = card.querySelector('h3').textContent.toLowerCase();
+        const descText = card.querySelector('p').textContent.toLowerCase();
+        if (titleText.includes(query) || descText.includes(query)) {
+          card.style.display = 'flex';
+        } else {
+          card.style.display = 'none';
+        }
+      });
+    };
+
+    renderCards();
   </script>
 </body>
 </html>
